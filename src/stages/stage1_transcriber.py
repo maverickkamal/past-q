@@ -60,6 +60,10 @@ def create_stage1_agent(model_name: str | None = None) -> Agent:
     )
 
 
+root_agent = create_stage1_agent()
+
+
+
 async def transcribe_chunk(
     runner: Runner,
     artifact_service: InMemoryArtifactService,
