@@ -36,8 +36,12 @@ class ExamPointer(BaseModel):
     paper_title: str = Field(description="e.g., 'Paper I (Gross Anatomy)'")
     session: str = Field(description="e.g., '2021/2022' or 'UNKNOWN'")
     examiner: str = Field(default="UNKNOWN", description="Primary examiner if identified")
+    category: Literal["ESSAY", "OBJECTIVE", "STEEPLECHASE", "CA_QUIZ", "UNKNOWN"] = Field(
+        default="UNKNOWN", description="Exam category: ESSAY, OBJECTIVE, STEEPLECHASE, or CA_QUIZ"
+    )
     start_page: int = Field(description="1-based start page of this exam in the PDF booklet")
     end_page: int = Field(description="1-based end page of this exam in the PDF booklet")
+
 
 
 class ExamManifest(BaseModel):
