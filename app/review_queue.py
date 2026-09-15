@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.database import (
+from app.database import (
     approve_question,
     get_database_stats,
     get_question_by_id,
@@ -43,7 +43,7 @@ def list_review_queue(discipline: str | None = None, exam_id: str | None = None)
         flags = ", ".join(it.get("flag_reasons_list", []))
         print(f"{q_id:<38} | {q_num:<8} | {disc:<12} | {cat:<14} | {flags}")
     print("-" * 105)
-    print("Use: python src/review_queue.py --show <ID> to inspect details\n")
+    print("Use: python app/review_queue.py --show <ID> to inspect details\n")
 
 
 def show_question_detail(question_id: str) -> None:

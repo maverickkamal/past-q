@@ -9,7 +9,7 @@ from google.genai import types
 from PIL import Image
 import pymupdf
 
-from src.config import ASSETS_DIR, RENDER_DPI
+from app.config import ASSETS_DIR, RENDER_DPI
 
 
 def crop_diagram_from_bytes(

@@ -6,8 +6,8 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-from src.config import DATABASE_PATH, SCHEMA_PATH
-from src.schemas import StructuredQuestion, ExamPointer
+from app.config import DATABASE_PATH, SCHEMA_PATH
+from app.schemas import StructuredQuestion, ExamPointer
 
 
 def get_connection(db_path: str | Path | None = None) -> sqlite3.Connection:

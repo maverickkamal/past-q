@@ -6,7 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from src.config import CURRICULUM_TAXONOMY_PATH
+from app.config import CURRICULUM_TAXONOMY_PATH
 
 
 @lru_cache(maxsize=1)

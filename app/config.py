@@ -9,7 +9,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATABASE_PATH = os.getenv("DATABASE_PATH", str(BASE_DIR / "medical_pq.db"))
 ASSETS_DIR = Path(os.getenv("ASSETS_DIR", str(BASE_DIR / "assets")))
 SCHEMA_PATH = BASE_DIR / "schema.sql"
-CURRICULUM_TAXONOMY_PATH = BASE_DIR / "src" / "curriculum_taxonomy.json"
+CURRICULUM_TAXONOMY_PATH = (
+    BASE_DIR / "app" / "curriculum_taxonomy.json"
+    if (BASE_DIR / "app" / "curriculum_taxonomy.json").exists()
+    else BASE_DIR / "src" / "curriculum_taxonomy.json"
+)
 
 # Invariant Constants from Technical Specification (Updated for 65k Output Window)
 RENDER_DPI = int(os.getenv("RENDER_DPI", "200"))

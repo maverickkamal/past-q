@@ -13,9 +13,9 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from src.config import PAGE_CHUNK_SIZE
-from src.stages.stage1_chunker import PDFChunk, slice_pdf_chunks
-from src.tools.diagram_tool import crop_diagram_tool
+from app.config import PAGE_CHUNK_SIZE
+from app.stages.stage1_chunker import PDFChunk, slice_pdf_chunks
+from app.tools.diagram_tool import crop_diagram_tool
 
 
 load_dotenv()

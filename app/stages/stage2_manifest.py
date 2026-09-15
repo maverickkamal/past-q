@@ -16,7 +16,7 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from src.schemas import ExamManifest, ExamPointer
+from app.schemas import ExamManifest, ExamPointer
 
 load_dotenv()
 

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Generator
 import pymupdf
 
-from src.config import PAGE_CHUNK_SIZE
+from app.config import PAGE_CHUNK_SIZE
 
 
 @dataclass

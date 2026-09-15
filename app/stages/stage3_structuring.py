@@ -16,12 +16,12 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from src.curriculum import (
+from app.curriculum import (
     get_taxonomy_prompt_context,
     resolve_course_code,
     resolve_system_region,
 )
-from src.schemas import ExamPointer, QuestionBatch, StructuredQuestion
+from app.schemas import ExamPointer, QuestionBatch, StructuredQuestion
 
 logging.getLogger("google_genai.models").setLevel(logging.ERROR)
 

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 import pymupdf
 
-from src.schemas import PreScanMetadata
+from app.schemas import PreScanMetadata
 
 # Discipline keyword maps
 DISCIPLINE_MAP = {
@@ -180,3 +180,6 @@ def run_stage0(pdf_path: str | Path) -> PreScanMetadata:
         exam_type=exam_type,
         confidence_tier=confidence,
     )
+
+
+scan_exam_file = run_stage0

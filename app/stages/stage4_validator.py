@@ -18,9 +18,9 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import Literal
 
-from src.config import ASSETS_DIR, BASE_DIR
-from src.curriculum import get_canonical_system_regions
-from src.schemas import ExamPointer, QuestionBatch, StructuredQuestion
+from app.config import ASSETS_DIR, BASE_DIR
+from app.curriculum import get_canonical_system_regions
+from app.schemas import ExamPointer, QuestionBatch, StructuredQuestion
 
 
 class ValidationResult(BaseModel):
@@ -88,7 +88,10 @@ def validate_question(
                     f"MARK_MISMATCH: subparts sum ({subparts_sum}) != total_marks ({question.total_marks})"
                 )
 
-    if not question.stem_text or len(question.stem_text.strip()) < 3:
+    # Only flag as empty if both stem_text is missing AND no items/subparts exist
+    has_valid_stem = question.stem_text and len(question.stem_text.strip()) >= 3
+    has_valid_items = len(question.items) > 0 and any(len(it.text.strip()) >= 3 for it in question.items)
+    if not has_valid_stem and not has_valid_items:
         flags.append("EMPTY_QUESTION_STEM")
     valid_disciplines = ("Anatomy", "Physiology", "Biochemistry")
     if question.discipline not in valid_disciplines:
