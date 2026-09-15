@@ -188,5 +188,143 @@ def get_questions_by_filter(
             row["items"] = json.loads(row["items_json"])
         else:
             row["items"] = []
+        if row.get("flag_reasons"):
+            try:
+                row["flag_reasons_list"] = json.loads(row["flag_reasons"])
+            except Exception:
+                row["flag_reasons_list"] = [row["flag_reasons"]]
+        else:
+            row["flag_reasons_list"] = []
 
     return rows
+
+
+def persist_validated_exam(
+    exam_pointer: ExamPointer,
+    questions: list[StructuredQuestion],
+    validation_results: list[Any],
+    source_document: str,
+    exam_type: str = "MBBS_EXAM",
+    db_path: str | Path | None = None,
+) -> None:
+    """Atomically persists an exam and its validated structured questions into SQLite."""
+    with get_connection(db_path) as conn:
+        # 1. Save or update parent exam
+        save_exam(
+            exam_pointer=exam_pointer,
+            source_document=source_document,
+            exam_type=exam_type,
+            db_path=db_path,
+        )
+
+        # 2. Save each question with its specific validation status & flag reasons
+        for q, res in zip(questions, validation_results):
+            flag_str = json.dumps(res.flag_reasons) if getattr(res, "flag_reasons", None) else None
+            status = getattr(res, "review_status", "APPROVED")
+            save_question(
+                exam_id=exam_pointer.exam_id,
+                question=q,
+                review_status=status,
+                flag_reasons=flag_str,
+                db_path=db_path,
+            )
+
+
+def get_review_queue(
+    discipline: str | None = None,
+    exam_id: str | None = None,
+    db_path: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """Retrieves all questions flagged with 'NEEDS_REVIEW' for human inspection."""
+    query = "SELECT * FROM questions WHERE review_status = 'NEEDS_REVIEW'"
+    params: list[Any] = []
+
+    if discipline:
+        query += " AND discipline = ?"
+        params.append(discipline)
+    if exam_id:
+        query += " AND exam_id = ?"
+        params.append(exam_id)
+
+    query += " ORDER BY created_at ASC"
+
+    with get_connection(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        rows = [dict(row) for row in cursor.fetchall()]
+
+    for row in rows:
+        if row.get("items_json"):
+            row["items"] = json.loads(row["items_json"])
+        else:
+            row["items"] = []
+        if row.get("flag_reasons"):
+            try:
+                row["flag_reasons_list"] = json.loads(row["flag_reasons"])
+            except Exception:
+                row["flag_reasons_list"] = [row["flag_reasons"]]
+        else:
+            row["flag_reasons_list"] = []
+
+    return rows
+
+
+def get_question_by_id(question_id: str, db_path: str | Path | None = None) -> dict[str, Any] | None:
+    """Retrieves a single question by its primary key ID."""
+    query = "SELECT * FROM questions WHERE id = ?"
+    with get_connection(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute(query, (question_id,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        data = dict(row)
+
+    if data.get("items_json"):
+        data["items"] = json.loads(data["items_json"])
+    else:
+        data["items"] = []
+
+    if data.get("flag_reasons"):
+        try:
+            data["flag_reasons_list"] = json.loads(data["flag_reasons"])
+        except Exception:
+            data["flag_reasons_list"] = [data["flag_reasons"]]
+    else:
+        data["flag_reasons_list"] = []
+
+    return data
+
+
+def approve_question(question_id: str, db_path: str | Path | None = None) -> bool:
+    """Updates a question's review_status to 'APPROVED' and clears flags."""
+    query = """
+    UPDATE questions 
+    SET review_status = 'APPROVED', flag_reasons = NULL 
+    WHERE id = ?
+    """
+    with get_connection(db_path) as conn:
+        cursor = conn.execute(query, (question_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def get_database_stats(db_path: str | Path | None = None) -> dict[str, Any]:
+    """Returns total counts of exams and questions grouped by status and discipline."""
+    with get_connection(db_path) as conn:
+        cursor = conn.cursor()
+        total_exams = cursor.execute("SELECT COUNT(*) FROM exams").fetchone()[0]
+        total_questions = cursor.execute("SELECT COUNT(*) FROM questions").fetchone()[0]
+        approved_questions = cursor.execute(
+            "SELECT COUNT(*) FROM questions WHERE review_status = 'APPROVED'"
+        ).fetchone()[0]
+        review_questions = cursor.execute(
+            "SELECT COUNT(*) FROM questions WHERE review_status = 'NEEDS_REVIEW'"
+        ).fetchone()[0]
+
+    return {
+        "total_exams": total_exams,
+        "total_questions": total_questions,
+        "approved_questions": approved_questions,
+        "needs_review_questions": review_questions,
+    }
