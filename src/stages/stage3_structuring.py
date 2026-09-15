@@ -16,6 +16,11 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
+from src.curriculum import (
+    get_taxonomy_prompt_context,
+    resolve_course_code,
+    resolve_system_region,
+)
 from src.schemas import ExamPointer, QuestionBatch, StructuredQuestion
 
 logging.getLogger("google_genai.models").setLevel(logging.ERROR)
@@ -26,7 +31,8 @@ STAGE3_MODEL = os.getenv("STAGE3_MODEL", "gemini-flash-latest")
 
 STAGE3_SYSTEM_INSTRUCTION = """\
 You are an expert preclinical medical examination structuring agent.
-You will receive an isolated examination paper transcribed in Markdown along with its metadata (discipline, session, title, examiner).
+You will receive an isolated examination paper transcribed in Markdown along with its metadata (discipline, session, title, examiner, level).
+You will also receive a CANONICAL CURRICULUM TAXONOMY specifying the exact courses, system regions, and topics for this discipline.
 
 Your task is to transform this raw examination text into a strictly structured `QuestionBatch` containing every question in the paper.
 
@@ -62,7 +68,6 @@ In our preclinical database architecture, all in-course assessment items belong 
      -> `category` MUST BE 'OBJECTIVE'.
      -> `sub_type` MUST BE 'SBA' (Single Best Answer) or 'MULTIPLE_TRUE_FALSE' (Type X).
 
-
 3. STEM VS. ITEMS DECOMPOSITION:
    - `stem_text`: The overarching clinical vignette, primary question prompt, or practical instruction.
    - `items`: The ordered list of subordinate components:
@@ -73,7 +78,9 @@ In our preclinical database architecture, all in-course assessment items belong 
 
 4. TAXONOMY & CURRICULAR MAPPING:
    - `discipline`: Must be 'Anatomy', 'Physiology', or 'Biochemistry' (inherit or refine from context).
-   - `system_region`: The physiological organ system or anatomical region (e.g., 'Upper Limb', 'Thorax', 'Cardiovascular', 'Renal', 'Neuroanatomy', 'Lipid Metabolism', 'Gastrointestinal').
+   - `level`: Academic preclinical level ('200L', '300L', or inherit from exam).
+   - `course_code`: Map to the matching course code from the provided taxonomy (e.g., 'ANA 201a', 'PIO 205', 'BCH 201') whenever identifiable from the question topic/system.
+   - `system_region`: MUST be chosen from the provided CANONICAL system regions list (e.g., 'General Anatomy and Upper Limb', 'Lower Limb', 'Thorax and Abdomen', 'Cardiovascular System', 'Renal System, Body Fluids, and Thermoregulation'). Do NOT invent non-canonical synonyms.
    - `topic`: Granular medical topic (e.g., 'Brachial Plexus', 'Cardiac Cycle', 'Beta-Oxidation', 'Femur Anatomy').
    - `curriculum_style`:
      - 'CCMAS_VIGNETTE': If the stem contains a clinical scenario (patient age, sex, clinical complaint, symptoms, surgical scenario, or lab findings).
@@ -148,20 +155,32 @@ async def structure_exam_paper(
         if pointer.category and pointer.category != "UNKNOWN"
         else ""
     )
+    level_hint = (
+        f"Designated Academic Level: {pointer.level}\n"
+        if pointer.level and pointer.level != "UNKNOWN"
+        else ""
+    )
+
+    taxonomy_context = get_taxonomy_prompt_context(
+        discipline=pointer.discipline,
+        level=pointer.level if pointer.level != "UNKNOWN" else None,
+    )
 
     prompt = (
         f"Please structure the following {pointer.discipline} examination paper:\n"
         f"Exam ID: {pointer.exam_id}\n"
         f"Paper Title: {pointer.paper_title}\n"
         f"{category_hint}"
+        f"{level_hint}"
         f"Session: {pointer.session}\n"
         f"Default Examiner: {pointer.examiner}\n"
         f"Booklet Page Span: Pages {pointer.start_page} to {pointer.end_page}\n\n"
+        f"--- TAXONOMY GUIDANCE ---\n"
+        f"{taxonomy_context}\n\n"
         f"--- BEGIN EXAM TEXT ---\n"
         f"{isolated_markdown}\n"
         f"--- END EXAM TEXT ---"
     )
-
 
     user_message = types.Content(
         role="user",
@@ -197,4 +216,27 @@ async def structure_exam_paper(
     elif raw_json.startswith("```"):
         raw_json = raw_json.removeprefix("```").removesuffix("```").strip()
 
-    return QuestionBatch.model_validate_json(raw_json)
+    batch = QuestionBatch.model_validate_json(raw_json)
+
+    # Post-processing normalization against canonical taxonomy
+    for q in batch.questions:
+        # 1. Inherit level from pointer if question level is unknown
+        if (q.level == "UNKNOWN" or not q.level) and pointer.level != "UNKNOWN":
+            q.level = pointer.level
+
+        # 2. Normalize system_region deterministically
+        q.system_region = resolve_system_region(
+            q.system_region,
+            discipline=q.discipline or pointer.discipline,
+            level=q.level if q.level != "UNKNOWN" else None,
+        )
+
+        # 3. Resolve course_code if unassigned
+        if not q.course_code:
+            q.course_code = resolve_course_code(
+                q.system_region,
+                discipline=q.discipline or pointer.discipline,
+                level=q.level if q.level != "UNKNOWN" else None,
+            )
+
+    return batch

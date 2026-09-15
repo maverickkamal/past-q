@@ -1,0 +1,1041 @@
+{
+  "$schema": "curriculum_taxonomy_v1",
+  "version": "1.0",
+  "levels": {
+    "200L": {
+      "level_name": "200 Level (Preclinical Year 1)",
+      "disciplines": {
+        "Anatomy": {
+          "courses": [
+            {
+              "course_code": "ANA 201a",
+              "canonical_name": "Intro. H Anatomy and Gross Anatomy of Upper Limbs",
+              "semester": "First Semester",
+              "system_region": "General Anatomy and Upper Limb",
+              "aliases": [
+                "ANA 201a",
+                "Introductory Anatomy, Gross Anatomy of Upper Limbs",
+                "Introduction to Human Anatomy and Upper Limb",
+                "Gross Anatomy of Upper Limbs",
+                "Upper Extremity"
+              ],
+              "core_topics": [
+                "Anatomical terms, planes, relationships, comparisons, laterality, and movements",
+                "Principles of osteology, arthrology, myology, and neurovascular architecture",
+                "Pectoral region, mammary gland structure, blood supply, and lymphatic drainage",
+                "Axilla boundaries, walls, apex, base, and neurovascular contents",
+                "Brachial plexus: roots, trunks, divisions, cords, branches, and Erb/Klumpke palsies",
+                "Deltoid and scapular regions, spaces of the scapular region, and rotator cuff muscles",
+                "Arm compartments, anterior and posterior neurovascular bundles, and cubital fossa",
+                "Forearm flexor and extensor compartments, muscular origins, insertions, and innervations",
+                "Carpal tunnel boundaries, contents, carpal tunnel syndrome, and retinacula",
+                "Hand compartments, intrinsic hand muscles, palmar fascial spaces, and neurovascular arches",
+                "Articular surfaces, capsules, ligaments, and kinesiology of shoulder, elbow, and radio-ulnar joints",
+                "Cutaneous innervation of upper limb, dermatomes, and radial, median, and ulnar nerve lesions"
+              ]
+            },
+            {
+              "course_code": "ANA 201b",
+              "canonical_name": "Intro. H Anatomy and Gross Anatomy of Lower Limbs",
+              "semester": "First Semester",
+              "system_region": "Lower Limb",
+              "aliases": [
+                "ANA 201b",
+                "Gross Anatomy of Lower Limbs",
+                "Introductory Anatomy, Gross Anatomy of Lower Limbs",
+                "Lower Extremity",
+                "Gross Anatomy of Lower Extremity"
+              ],
+              "core_topics": [
+                "Pelvic bone, femur, patella, tibia, fibula, and tarsal osteology and markings",
+                "Femoral triangle: boundaries, contents, femoral sheath, femoral canal, and hernia",
+                "Anterior and medial compartments of the thigh: attachments, actions, and innervation",
+                "Adductor (Hunter's) canal: boundaries, neurovascular contents, and clinical significance",
+                "Gluteal region: muscular layers, greater and lesser sciatic foramina, and nerve relations",
+                "Hamstring compartment: attachments, innervation, and sciatic nerve course and branching",
+                "Popliteal fossa: boundaries, floor, spatial relations of neurovascular bundle, and genicular anastomosis",
+                "Anterior, lateral, and posterior compartments of the leg and associated retinacula",
+                "Hip and knee joints: articular surfaces, fibrous capsules, cruciate and collateral ligaments, and menisci",
+                "Ankle joint, subtalar joint, and passive and dynamic supports of the arches of the foot",
+                "Sole of the foot: four muscular layers, planar neurovascular distribution, and plantar aponeurosis",
+                "Cutaneous innervation, superficial veins (great and small saphenous), and gait anomalies"
+              ]
+            },
+            {
+              "course_code": "ANA 203",
+              "canonical_name": "Histology of Basic Tissues",
+              "semester": "First Semester",
+              "system_region": "General and Basic Histology",
+              "aliases": [
+                "ANA 203",
+                "Basic Histology",
+                "General Histology",
+                "Histology of Basic Body Tissues"
+              ],
+              "core_topics": [
+                "Ultrastructure of the cell, cytoplasmic organelles, and cell cycle",
+                "Epithelial tissue classification, basal lamina, and apical specializations (microvilli, cilia, stereocilia)",
+                "Intercellular junctions: zonula occludens, zonula adherens, macula adherens, and gap junctions",
+                "Glandular epithelia: morphology, classifications, and merocrine, apocrine, and holocrine mechanisms",
+                "Connective tissue proper: collagen, reticular, and elastic fibers, and ground substance",
+                "Connective tissue cells: fibroblasts, macrophages, mast cells, plasma cells, and adipocytes",
+                "Cartilage subtypes: hyaline, elastic, and fibrocartilage microscopic organization",
+                "Compact and cancellous bone histology, osteon (Haversian) systems, and ossification",
+                "Histology of muscle tissue: light and electron microscopic features of skeletal, cardiac, and smooth muscle",
+                "Nervous tissue: multipolar neurons, peripheral nerve architecture, myelination, and neuroglia",
+                "Sensory receptors histology: free nerve endings, Meissner's corpuscles, Pacinian corpuscles, and neuromuscular spindles",
+                "Principles of light microscopy, tissue processing, and basic histological staining mechanisms"
+              ]
+            },
+            {
+              "course_code": "ANA 205",
+              "canonical_name": "General Embryology",
+              "semester": "First Semester",
+              "system_region": "General Embryology and Early Development",
+              "aliases": [
+                "ANA 205",
+                "Basic Embryology",
+                "General Embryology and Teratology",
+                "Early Human Development"
+              ],
+              "core_topics": [
+                "Gametogenesis: comparative stages of spermatogenesis and oogenesis",
+                "Hormonal control of ovarian and endometrial (menstrual) cycles",
+                "Fertilization: capicitation, acrosome reaction, cortical reaction, and cleavage",
+                "Morula and blastocyst formation, trophoblast differentiation, and normal and ectopic implantation",
+                "Second week of development (week of twos): embryoblast, trophoblast, amniotic cavity, and yolk sac",
+                "Gastrulation: primitive streak formation, notochord induction, and trilaminar germ disc derivatives",
+                "Neurulation: neural plate, neural fold closure, neural crest cell differentiation and migration",
+                "Embryonic folding in cranio-caudal and lateral axes and formation of intraembryonic coelom",
+                "Differentiation of paraxial mesoderm into somites (sclerotome, myotome, and dermatome)",
+                "Development of fetal membranes, yolk sac, allantois, amnion, and chorionic villi",
+                "Placentation, placental membrane barriers, umbilical cord anatomy, and amniotic fluid dynamics",
+                "Principles of teratology, critical periods of embryogenesis, and causes of congenital malformations"
+              ]
+            },
+            {
+              "course_code": "ANA 202a",
+              "canonical_name": "Gross Anatomy of Thorax, Abdomen",
+              "semester": "Second Semester",
+              "system_region": "Thorax and Abdomen",
+              "aliases": [
+                "ANA 202a",
+                "Gross Anatomy of Thorax and Abdomen",
+                "Anatomy of Thorax and Abdomen",
+                "Thorax and Abdomen"
+              ],
+              "core_topics": [
+                "Thoracic cage osteology, intercostal spaces, muscles, and intercostal neurovascular bundles",
+                "Pleurae, pleural cavities, pleural recesses, and thoracic wall mechanics of respiration",
+                "Lungs: lobes, fissures, bronchopulmonary segments, root of the lung, and hilum relations",
+                "Mediastinum: subdivisions, superior, anterior, middle, and posterior mediastinal contents and relations",
+                "Pericardium: fibrous and serous layers, pericardial sinuses (transverse and oblique), and blood supply",
+                "Heart: external morphology, cardiac borders, internal anatomy of chambers, and valvular mechanisms",
+                "Coronary circulation, coronary dominance, cardiac veins, and cardiac conduction system",
+                "Anterior abdominal wall: musculature, rectus sheath arrangement, and neurovascular distribution",
+                "Inguinal canal: boundaries, deep and superficial rings, spermatic cord contents, and herniae",
+                "Peritoneum: greater and lesser omenta, peritoneal sacs, gutters, and epiploic foramen of Winslow",
+                "Abdominal alimentary tract: gross anatomy, blood supply, and relations of stomach, small, and large intestine",
+                "Abdominal viscera: liver lobes, segments, porta hepatis, biliary apparatus, pancreas, spleen, and kidneys"
+              ]
+            },
+            {
+              "course_code": "ANA 202b",
+              "canonical_name": "Gross Anatomy of Pelvis and Perineum",
+              "semester": "Second Semester",
+              "system_region": "Pelvis and Perineum",
+              "aliases": [
+                "ANA 202b",
+                "Gross Anatomy of Pelvis and Perineum",
+                "Anatomy of Pelvis and Perineum",
+                "Pelvis and Perineum"
+              ],
+              "core_topics": [
+                "Bony pelvis: bones, sacroiliac and sacrococcygeal joints, pubic symphysis, and pelvic diameters",
+                "Pelvic walls, pelvic floor, levator ani and coccygeus muscles, and endopelvic fascia condensations",
+                "Pelvic peritoneal reflections, pouches (rectovesical and rectouterine pouch of Douglas)",
+                "Rectum and anal canal: external and internal features, pectinate line, sphincters, and neurovasculature",
+                "Urinary bladder and ureters: surfaces, relations, trigone, and neurovascular supply",
+                "Male pelvic viscera: prostate gland, seminal vesicles, ductus deferens, and ejaculatory ducts",
+                "Female pelvic viscera: ovaries, uterine tubes, uterus (supports, ligaments), and vagina",
+                "Internal iliac artery: anterior and posterior divisions, branches, and pelvic venous plexuses",
+                "Perineum: boundaries, anal and urogenital triangles, and the perineal body",
+                "Superficial and deep perineal pouches: boundaries, fascial layers (Colles, perineal membrane), and contents",
+                "Male and female external genitalia, erectile bodies, and pudendal neurovascular bundle",
+                "Ischioanal (ischiorectal) fossae: boundaries, pudendal canal (Alcock's), and contents"
+              ]
+            },
+            {
+              "course_code": "ANA 204",
+              "canonical_name": "Systemic Histology (Organology)",
+              "semester": "Second Semester",
+              "system_region": "Systemic Histology",
+              "aliases": [
+                "ANA 204",
+                "Systemic Histology",
+                "Organology",
+                "Histology of Organ Systems"
+              ],
+              "core_topics": [
+                "Cardiovascular histology: endocardium, myocardium, epicardium, conducting myocytes, and elastic/muscular arteries",
+                "Lymphoid organs histology: thymus cortex/medulla, lymph node sinuses, palatine tonsils, and spleen red/white pulp",
+                "Respiratory system histology: olfactory epithelium, larynx, trachea, intrapulmonary bronchi, and alveolar blood-air barrier",
+                "Digestive tract histology: structural plan of esophagus, stomach (fundic vs pyloric glands), and enteroendocrine cells",
+                "Intestinal histology: duodenal Brunner's glands, jejunal villi, crypts of Lieberkühn, and ileal Peyer's patches",
+                "Large intestine and appendix histology, teniae coli, and anorectal junction transition",
+                "Hepatobiliary and pancreatic histology: hepatic classical lobules, portal triads, sinusoids, and exocrine/endocrine pancreas",
+                "Urinary system histology: nephron segments, podocyte filtration barrier, and juxtaglomerular apparatus",
+                "Male reproductive histology: seminiferous tubules, Leydig cells, epididymis, ductus deferens, and prostate gland",
+                "Female reproductive histology: ovarian follicular maturation stages, corpus luteum, cyclical endometrium, and cervix",
+                "Endocrine glands histology: pituitary anterior/posterior lobes, thyroid follicles, parathyroid, and adrenal cortical zones",
+                "Integumentary histology: thin skin, thick skin, epidermal strata, hair follicles, and sweat and sebaceous glands"
+              ]
+            },
+            {
+              "course_code": "ANA 206",
+              "canonical_name": "Systemic Embryology (Organogenesis)",
+              "semester": "Second Semester",
+              "system_region": "Systemic Embryology",
+              "aliases": [
+                "ANA 206",
+                "Systemic Embryology",
+                "Organogenesis",
+                "Special Embryology"
+              ],
+              "core_topics": [
+                "Development of the primitive heart tube, cardiac looping, and cardiac chambers position",
+                "Septation of atria, atrioventricular canal, ventricles, and aorticopulmonary trunk outflow tract",
+                "Development and fate of the aortic arches, venous system development, and fetal circulation shifts at birth",
+                "Development of the respiratory system: laryngotracheal diverticulum, tracheoesophageal septum, and lung maturation stages",
+                "Development of the foregut: stomach rotations, omental bursa development, and duodenal recanalization",
+                "Development of the midgut: physiological umbilical herniation, 270-degree counterclockwise rotation, and fixation",
+                "Development of the hindgut: cloaca partition by urorectal septum, and dual origin of the anal canal",
+                "Development of the urinary system: pronephros, mesonephros, and definitive metanephros and ureteric bud interactions",
+                "Development of the genital system: indifferent gonads, mesonephric/paramesonephric duct differentiation, and external genitalia",
+                "Development of the body cavities, pleuroperitoneal membranes, and muscular diaphragm",
+                "Development of the musculoskeletal and integumentary systems",
+                "Congenital anomalies: atrial/ventricular septal defects, tracheoesophageal fistula, omphalocele, and renal agenesis"
+              ]
+            }
+          ]
+        },
+        "Physiology": {
+          "courses": [
+            {
+              "course_code": "PIO 201",
+              "canonical_name": "Introductory Physiology and the Autonomic Nervous System",
+              "semester": "First Semester",
+              "system_region": "General Physiology and Autonomic Nervous System",
+              "aliases": [
+                "PHS 201",
+                "PIO 201",
+                "Introductory Physiology",
+                "General Physiology",
+                "Introductory Physiology and ANS",
+                "Autonomic Nervous System"
+              ],
+              "core_topics": [
+                "Functional organization of the human body, homeostatic control systems, and negative/positive feedback mechanisms",
+                "Cell membrane structure, lipid bilayer, membrane proteins, and intercellular junctions",
+                "Membrane transport mechanisms: simple diffusion, facilitated diffusion, primary and secondary active transport",
+                "Resting membrane potentials, equilibrium potentials, Nernst equation, and Goldman-Hodgkin-Katz equation",
+                "Action potential generation, ionic basis, voltage-gated channels, and impulse propagation in excitable tissues",
+                "Structure and classification of nerve fibers, conduction velocity, and nerve degeneration and regeneration",
+                "Synaptic transmission, neuromuscular junction transmission, end-plate potentials, and electromyography (EMG)",
+                "Molecular mechanisms of skeletal muscle contraction: sliding filament theory and excitation-contraction coupling",
+                "Smooth muscle and cardiac muscle contractile mechanisms, calmodulin signaling, and latch phenomena",
+                "Structural and functional organization of the autonomic nervous system: sympathetic and parasympathetic divisions",
+                "Autonomic neurotransmitters (acetylcholine and noradrenaline), adrenergic and cholinergic receptors, and effector responses",
+                "Autonomic reflexes, higher integration centers, and sympathomimetic, sympatholytic, and parasympatholytic drugs"
+              ]
+            },
+            {
+              "course_code": "PIO 203",
+              "canonical_name": "Blood physiology",
+              "semester": "First Semester",
+              "system_region": "Blood and Body Fluids",
+              "aliases": [
+                "PHS 203",
+                "PIO 203",
+                "Blood Physiology",
+                "Haematological Physiology",
+                "Physiology of Blood"
+              ],
+              "core_topics": [
+                "General characteristics, volume, specific gravity, and essential functions of blood and plasma",
+                "Plasma proteins: fractions (albumin, globulins, fibrinogen), normal concentrations, and oncotic/transport roles",
+                "Erythropoiesis: pluripotent stem cells, developmental stages, and dietary and hormonal regulation by erythropoietin",
+                "Hemoglobin synthesis, molecular structure, variants, functions, and iron metabolism and turnover",
+                "Erythrocyte destruction, reticuloendothelial system, and physiological mechanisms and classification of anaemias",
+                "Leukopoiesis, classification and morphologies of leukocytes, and white blood cell kinetics",
+                "Cell-mediated and humoral immunity, physiological basis of immunization, and autoimmune mechanisms",
+                "Platelets: thrombopoiesis, structural morphology, platelet granules, and role in primary hemostasis",
+                "Secondary hemostasis: intrinsic, extrinsic, and common blood coagulation pathways and clotting factors",
+                "Physiological anticoagulants, protein C/S pathways, antithrombin III, and fibrinolytic system regulation",
+                "ABO and Rhesus blood group systems, agglutinogens, agglutinins, and blood transfusion reactions",
+                "Pathophysiology of bleeding and clotting disorders: thrombocytopenia, purpura, and hemophilias"
+              ]
+            },
+            {
+              "course_code": "PIO 205",
+              "canonical_name": "The Cardiovascular system",
+              "semester": "First Semester",
+              "system_region": "Cardiovascular System",
+              "aliases": [
+                "PHS 205",
+                "PIO 205",
+                "The Cardiovascular System",
+                "Cardiovascular Physiology",
+                "CVS Physiology"
+              ],
+              "core_topics": [
+                "Functional organization and physiologic anatomy of the heart and systemic and pulmonary circulations",
+                "Electrophysiological properties of cardiac muscle, pacemaker action potentials, and ventricular action potentials",
+                "Cardiac conduction system, origin and spread of cardiac impulse, and generation of the electrocardiogram (ECG)",
+                "Mechanical events of the cardiac cycle: pressure and volume curves of the atria and ventricles",
+                "Heart sounds: origins of first, second, third, and fourth heart sounds, and mechanisms of cardiac murmurs",
+                "Cardiac output: definition, measurement methods (Fick principle), stroke volume regulation, and Frank-Starling law",
+                "Hemodynamics: principles of pressure, flow, and peripheral resistance (Poiseuille's law), and laminar vs turbulent flow",
+                "Arterial blood pressure: systolic, diastolic, pulse, and mean pressures, and measurement techniques",
+                "Short-term neural regulation of arterial blood pressure: arterial baroreceptor and chemoreceptor reflexes",
+                "Long-term hormonal regulation of blood pressure: renin-angiotensin-aldosterone axis, vasopressin, and ANP",
+                "Capillary dynamics: Starling forces across capillary membranes, fluid exchange, and lymph formation",
+                "Cardiovascular adaptations in exercise, gravitational stress, and regulatory roles of the vascular endothelium"
+              ]
+            },
+            {
+              "course_code": "PIO 202",
+              "canonical_name": "Renal Physiology, Body Fluids and Temperature Regulation",
+              "semester": "Second Semester",
+              "system_region": "Renal System, Body Fluids, and Thermoregulation",
+              "aliases": [
+                "PHS 202",
+                "PIO 202",
+                "Renal Physiology, Body Fluids and Temperature Regulation",
+                "Renal Physiology",
+                "Excretory Physiology"
+              ],
+              "core_topics": [
+                "Body fluid compartments: volume distribution (ICF and ECF), electrolyte composition, and measurement principles",
+                "Physiologic anatomy of the kidney, nephron architecture, cortical vs juxtamedullary nephrons",
+                "Renal blood flow, renal autoregulation (myogenic mechanism and tubuloglomerular feedback)",
+                "Glomerular filtration: filtration membrane dynamics, net ultrafiltration pressure, and GFR determination",
+                "Tubular reabsorption and secretion in proximal convoluted tubule, loop of Henle, distal tubule, and collecting duct",
+                "Medullary countercurrent multiplier and exchanger mechanisms for urine concentration and dilution",
+                "Hormonal regulation of water and electrolyte excretion: ADH, aldosterone, angiotensin II, and natriuretic peptides",
+                "Renal regulation of systemic acid-base balance: bicarbonate reabsorption, titratable acids, and ammonium excretion",
+                "Physiology of micturition: urinary bladder innervation, micturition reflex, and neurogenic bladder disorders",
+                "Functional assessment of renal function: clearance of inulin, creatinine, and para-aminohippuric acid (PAH)",
+                "Thermoregulation: normal body temperature, hypothalamus set-point, and heat gain and heat loss mechanisms",
+                "Pathophysiological abnormalities of temperature regulation: fever, hypothermia, and heat stroke"
+              ]
+            },
+            {
+              "course_code": "PIO 204",
+              "canonical_name": "Respiratory system",
+              "semester": "Second Semester",
+              "system_region": "Respiratory System",
+              "aliases": [
+                "PHS 204",
+                "PIO 204",
+                "Respiratory System",
+                "Respiratory Physiology",
+                "Physiology of Respiration"
+              ],
+              "core_topics": [
+                "Physiologic anatomy of the respiratory tract, conducting versus respiratory zones, and non-respiratory functions",
+                "Mechanics of pulmonary ventilation: intrapleural, alveolar, and transpulmonary pressure relationships",
+                "Inspiratory and expiratory muscle actions and dynamic changes during quiet and forced breathing",
+                "Lung compliance, pulmonary surfactant composition, physiological roles, and law of Laplace",
+                "Spirometry: static and dynamic lung volumes, lung capacities, anatomical and physiological dead space",
+                "Pulmonary circulation dynamics, pulmonary vascular resistance, and regional ventilation-perfusion (V/Q) ratios",
+                "Diffusion of respiratory gases across the alveolocapillary membrane, Fick's law, and diffusion capacity",
+                "Oxygen transport in blood: oxyhemoglobin dissociation curve, P50, 2,3-BPG, and the Bohr effect",
+                "Carbon dioxide transport in blood: dissolved, bicarbonate, carbamino compounds, and the Haldane effect",
+                "Neural regulation of respiration: medullary respiratory centers (DRG, VRG), pontine centers, and respiratory rhythms",
+                "Chemical regulation of respiration: central medullary and peripheral chemoreceptor responses to CO2, H+, and O2",
+                "Respiratory adaptations to high altitude, hypobaric conditions, deep-sea diving, and types of hypoxia"
+              ]
+            },
+            {
+              "course_code": "PIO 206",
+              "canonical_name": "Neuroscience I",
+              "semester": "Second Semester",
+              "system_region": "Neurophysiology",
+              "aliases": [
+                "PHS 206",
+                "PIO 206",
+                "Neuroscience I",
+                "Central Nervous System Physiology",
+                "Neurophysiology I"
+              ],
+              "core_topics": [
+                "General plan and functional organization of the central and peripheral nervous systems",
+                "Sensory division: classification of sensory receptors, stimulus transduction, and adaptation properties",
+                "Sensory pathways: dorsal column-medial lemniscal system and spinothalamic anterolateral tracts",
+                "Pain physiology: nociceptors, dual pain pathways, gate control theory, and endogenous analgesia systems",
+                "Motor division: lower and upper motor neurons, motor units, and descending corticospinal motor tracts",
+                "Spinal cord reflex mechanisms: monosynaptic stretch reflex, reciprocal innervation, and withdrawal flexor reflex",
+                "Muscle spindle and Golgi tendon organ structure, gamma motor loop, and maintenance of muscle tone",
+                "Brainstem motor centers, vestibular apparatus, semicircular canals, and posture and equilibrium regulation",
+                "Cerebellum: functional zones (vestibulo-, spino-, cerebro-cerebellum), circuitry, and cerebellar lesions",
+                "Basal ganglia: striatal connections, direct and indirect pathways, and parkinsonism and involuntary movements",
+                "Thalamic nuclei classification and functions; hypothalamus, limbic system, and emotion and drive",
+                "Cerebral cortex: sensory and motor areas, electroencephalogram (EEG), and sleep-wake cycle physiology"
+              ]
+            }
+          ]
+        },
+        "Biochemistry": {
+          "courses": [
+            {
+              "course_code": "BCH 201",
+              "canonical_name": "Cell Biology, PH and Buffer",
+              "semester": "First Semester",
+              "system_region": "Biophysical and Cell Biochemistry",
+              "aliases": [
+                "BCH 201",
+                "Cell Biology, pH and Buffer",
+                "Cell Biology, PH and Buffers",
+                "Introductory Biochemistry"
+              ],
+              "core_topics": [
+                "Biochemical organization of prokaryotic and eukaryotic cells and subcellular organelle functions",
+                "Chemical bonds in biological systems: covalent, ionic, hydrogen bonds, hydrophobic interactions, and van der Waals",
+                "Physical, chemical, and biological properties of water as a universal physiological solvent",
+                "Weak acids and bases, dissociation constants (Ka), and water ionization (Kw)",
+                "Concept of pH, derivation of Henderson-Hasselbalch equation, and quantitative buffer calculations",
+                "Physiological buffer systems: bicarbonate-carbonic acid, phosphate, hemoglobin, and protein buffers",
+                "Pathophysiological concepts of acid-base disorders: acidemia, alkalemia, metabolic/respiratory acidosis and alkalosis",
+                "Thermodynamics in biological systems: standard free energy change (Delta G), enthalpy, entropy, and equilibrium",
+                "High-energy phosphate compounds: ATP phosphoanhydride bonds, ATP-ADP cycle, and energy coupling",
+                "Methods of cell disruption, subcellular fractionation, and organelle marker enzymes",
+                "Chromatographic and electrophoretic techniques in biochemistry: principles and diagnostic applications",
+                "Spectrophotometric analysis, Beer-Lambert law, and quantitative assay of clinical biomolecules"
+              ]
+            },
+            {
+              "course_code": "BCH 203",
+              "canonical_name": "Carbohydrate Chemistry",
+              "semester": "First Semester",
+              "system_region": "Carbohydrate Chemistry",
+              "aliases": [
+                "BCH 203",
+                "Chemistry of Carbohydrates",
+                "Structure and Chemistry of Carbohydrates"
+              ],
+              "core_topics": [
+                "Biomedical importance and general classification of carbohydrates (monosaccharides, oligosaccharides, polysaccharides)",
+                "Stereochemistry of monosaccharides: D- and L-isomers, optical activity, and asymmetric carbons",
+                "Ring structures of sugars: pyranose and furanose conformations, Haworth projections, and mutarotation",
+                "Monosaccharide isomerism: aldose-ketose isomerism, epimers (glucose, galactose, mannose), and anomers",
+                "Chemical properties and reactions of monosaccharides: oxidation, reduction, esterification, and osazone formation",
+                "Biologically important derivatives: sugar acids, amino sugars, deoxysugars, and sugar alcohols",
+                "Disaccharides: structure, glycosidic linkages, and reducing properties of maltose, lactose, and sucrose",
+                "Homopolysaccharides: structure and branch points of glycogen, starch (amylose and amylopectin), and cellulose",
+                "Heteropolysaccharides: glycosaminoglycans (GAGs) structure, distribution, and chondroitin, heparin, hyaluronic acid",
+                "Proteoglycans and glycoproteins: synthesis linkages (O-linked and N-linked) and extracellular matrix structure",
+                "Blood group substances: ABO antigenic carbohydrate structures and specific glycosyltransferases",
+                "Dietary fiber: classification, physiological roles, and colonic bacterial degradation products"
+              ]
+            },
+            {
+              "course_code": "BCH 205",
+              "canonical_name": "Amino Acids chemistry",
+              "semester": "First Semester",
+              "system_region": "Amino Acid and Protein Chemistry",
+              "aliases": [
+                "BCH 205",
+                "Amino Acid Chemistry",
+                "Chemistry of Amino Acids",
+                "Chemistry of Amino Acids and Proteins"
+              ],
+              "core_topics": [
+                "Structural classification of the 20 standard amino acids based on side-chain polarity and chemical nature",
+                "Nutritional classification of amino acids: essential, semi-essential, and non-essential amino acids",
+                "Stereochemistry and optical properties of amino acids: L-alpha-amino acids in human proteins",
+                "Acid-base properties and amphoteric nature of amino acids: zwitterion formation and titration curves",
+                "Determination of isoelectric points (pI) of neutral, acidic, and basic amino acids",
+                "Chemical reactions of amino acids: reactions of amino group, carboxylic acid group, and specific side chains",
+                "The peptide bond: chemical formation, planar rigid geometry, partial double-bond character, and trans configuration",
+                "Naturally occurring biologically active peptides: glutathione, oxytocin, vasopressin, and insulin A/B chains",
+                "Primary structure of proteins: peptide sequencing, Sanger's reagent, Edman degradation, and disulfide linkages",
+                "Secondary structure motifs: alpha-helices, beta-pleated sheets (parallel/antiparallel), beta-turns, and Ramachandran plots",
+                "Tertiary and quaternary protein structures: stabilizing non-covalent interactions and molecular subunit assembly",
+                "Protein denaturation, folding mechanisms, molecular chaperones, and clinical protein misfolding states"
+              ]
+            },
+            {
+              "course_code": "BCH 209",
+              "canonical_name": "Lipid Metabolism",
+              "semester": "First Semester",
+              "system_region": "Lipid Chemistry and Structural Lipids",
+              "aliases": [
+                "BCH 209",
+                "Lipid Metabolism I",
+                "Chemistry of Lipids",
+                "Lipid Chemistry and Metabolism"
+              ],
+              "core_topics": [
+                "Classification of lipids: simple, compound, and derived lipids, and physiological functions",
+                "Fatty acid chemistry: nomenclature, chain length, saturated vs unsaturated fatty acids, and cis/trans isomerism",
+                "Essential fatty acids: structure, dietary significance, and roles of linoleic, alpha-linolenic, and arachidonic acids",
+                "Triacylglycerols (triglycerides): simple and mixed fats, physical properties, saponification, and energy storage",
+                "Glycerophospholipids: structure and roles of phosphatidylcholine, phosphatidylethanolamine, phosphatidylserine, cardiolipin",
+                "Sphingolipids: sphingosine backbone, ceramide, sphingomyelin, and myelin sheath formation",
+                "Glycosphingolipids: cerebrosides, sulfatides, and gangliosides structure and cellular recognition functions",
+                "Sterols and steroids: cholesterol chemical structure, free vs esterified cholesterol, and cell membrane fluidity",
+                "Steroid hormone precursors, bile acids (cholic and chenodeoxycholic acids), and conjugated bile salts",
+                "Eicosanoids: prostaglandins, prostacyclins, thromboxanes, and leukotrienes biosynthesis from arachidonic acid",
+                "Digestion and absorption of dietary lipids: pancreatic lipase, colipase, bile salt micelles, and chylomicron assembly",
+                "Plasma lipoproteins: classes (chylomicrons, VLDL, IDL, LDL, HDL), apolipoproteins, and lipid transport mechanisms"
+              ]
+            },
+            {
+              "course_code": "BCH 202",
+              "canonical_name": "Nucleic Acids Chemistry",
+              "semester": "Second Semester",
+              "system_region": "Nucleic Acid Structure and Molecular Genetics",
+              "aliases": [
+                "BCH 202",
+                "Nucleic Acid Chemistry",
+                "Chemistry of Nucleic Acids",
+                "Nucleic Acids and Molecular Biology"
+              ],
+              "core_topics": [
+                "Purine and pyrimidine nitrogenous bases: structures, numbering, tautomerism, and synthetic analogs",
+                "Nucleosides and nucleotides: structures, N-glycosidic bonds, and phosphodiester linkages",
+                "Biologically active non-nucleic acid nucleotides: ATP, ADP, AMP, cyclic AMP (cAMP), cGMP, UDP-glucose, and SAM",
+                "Deoxyribonucleic acid (DNA) structure: Watson-Crick double helix, complementary base pairing, and geometry",
+                "DNA denaturation (melting temperature Tm), hyperchromic effect, renaturation, and hybridization kinetics",
+                "Chromatin organization and packaging: nucleosomes, histone octamers, solenoid models, and chromosomes",
+                "Ribonucleic acid (RNA) types: messenger RNA (mRNA), transfer RNA (tRNA cloverleaf/L-shape), and ribosomal RNA (rRNA)",
+                "Small non-coding RNAs: microRNA (miRNA), small interfering RNA (siRNA), and small nuclear RNA (snRNA)",
+                "Overview of eukaryotic genome organization, repetitive sequences, and non-coding mitochondrial DNA",
+                "Biosynthesis of purines and pyrimidines overview and metabolic inhibitors of nucleotide synthesis",
+                "Abnormalities of DNA repair systems: nucleotide excision repair defects, xeroderma pigmentosum, and skin malignancy",
+                "Recombinant DNA tools: restriction endonucleases, plasmid vectors, and agarose gel electrophoresis of DNA"
+              ]
+            },
+            {
+              "course_code": "BCH 204",
+              "canonical_name": "Enzymes, Coenzymes and Bioenergetics",
+              "semester": "Second Semester",
+              "system_region": "Enzymology and Bioenergetics",
+              "aliases": [
+                "BCH 204",
+                "Enzymes and Bioenergetics",
+                "Enzymology",
+                "Enzymes, Coenzymes and Bioenergetics"
+              ],
+              "core_topics": [
+                "Enzyme classification and systematic nomenclature (IUBMB 6 major classes: oxidoreductases to ligases)",
+                "Mechanisms of enzyme catalysis: free energy of activation, transition-state stabilization, and active site properties",
+                "Coenzymes and prosthetic groups: derived from water-soluble vitamins (NAD+, FAD, TPP, PLP, CoA, Biotin)",
+                "Enzyme kinetics: derivation of Michaelis-Menten equation, significance of Km and Vmax, and catalytic turnover (kcat)",
+                "Linear transformations of kinetic data: Lineweaver-Burk double-reciprocal plot and Eadie-Hofstee plots",
+                "Reversible inhibition: competitive, non-competitive, and uncompetitive kinetics and Lineweaver-Burk diagnostic patterns",
+                "Irreversible enzyme inhibition, covalent modification of active sites, and organophosphate anticholinesterases",
+                "Regulation of enzyme activity: allosteric regulation, feedback inhibition, cooperativity, and zymogen activation",
+                "Isoenzymes: molecular genetics, tissue specificity, and clinical diagnostic value of LDH, CK, and ALP isoenzymes",
+                "Clinical diagnostic enzymology: serum enzyme alterations in myocardial infarction, hepatitis, and bone disease",
+                "Mitochondrial electron transport chain: complexes I to IV, mobile carriers (ubiquinone, cytochrome c), and redox potential",
+                "Chemiosmotic hypothesis, ATP synthase complex architecture, respiratory control, uncouplers, and ETC inhibitors"
+              ]
+            },
+            {
+              "course_code": "BCH 206",
+              "canonical_name": "Amino Acids Metabolism",
+              "semester": "Second Semester",
+              "system_region": "Amino Acid Metabolism and Nitrogen Balance",
+              "aliases": [
+                "BCH 206",
+                "Amino Acid Metabolism",
+                "Metabolism of Amino Acids",
+                "Nitrogen Metabolism"
+              ],
+              "core_topics": [
+                "Nitrogen balance: positive, negative, and equilibrium states, and dietary amino acid pool turnover",
+                "Intracellular protein degradation: ATP-dependent ubiquitin-proteasome system and lysosomal proteolysis",
+                "Transamination: mechanisms, role of pyridoxal phosphate (PLP), and diagnostic transaminases (AST and ALT)",
+                "Oxidative deamination: glutamate dehydrogenase reaction, allosteric control, and ammonium ion production",
+                "Non-oxidative deamination, transdeamination, and transport of ammonia via glutamine and alanine",
+                "The Urea cycle (Krebs-Henseleit cycle): 5 enzymatic reactions, cellular compartmentalization, and regulation by N-acetylglutamate",
+                "Metabolic disorders of the urea cycle: hyperammonemia, ornithine transcarbamylase deficiency, and ammonia encephalopathy",
+                "Carbon skeleton catabolism: glucogenic vs ketogenic amino acids, and entry points into the citric acid cycle",
+                "Catabolism of phenylalanine and tyrosine: metabolic pathways, melanin, and catecholamines synthesis",
+                "Inborn errors of aromatic amino acid metabolism: phenylketonuria (PKU), alkaptonuria, tyrosinemia, and albinism",
+                "Metabolism of sulfur-containing amino acids (methionine and cysteine), SAM cycle, and homocystinuria",
+                "Catabolism of branched-chain amino acids (leucine, isoleucine, valine) and maple syrup urine disease (MSUD)"
+              ]
+            },
+            {
+              "course_code": "BCH 208",
+              "canonical_name": "Carbohydrate Metabolism",
+              "semester": "Second Semester",
+              "system_region": "Carbohydrate Metabolism",
+              "aliases": [
+                "BCH 208",
+                "Carbohydrate Metabolism",
+                "Intermediary Carbohydrate Metabolism",
+                "Metabolism of Carbohydrates"
+              ],
+              "core_topics": [
+                "Glycolysis (Embden-Meyerhof pathway): aerobic vs anaerobic phases, individual reactions, and energetic stoichiometry",
+                "Regulation of glycolysis: key regulatory enzymes (hexokinase/glucokinase, PFK-1, and pyruvate kinase)",
+                "Fates of pyruvate: conversion to acetyl-CoA, lactic acid fermentation, and the Cori cycle",
+                "Pyruvate dehydrogenase multienzyme complex: constituent enzymes, required cofactors, and covalent phosphorylation control",
+                "Citric Acid Cycle (Krebs cycle): enzymatic reactions, energetic yield, amphibolic nature, and anaplerotic reactions",
+                "Gluconeogenesis: key non-carbohydrate substrates, 4 bypass enzymatic reactions, energetic cost, and hormonal control",
+                "Glycogenesis: pathway, glycogenin primer, branching enzyme, and glycogen synthase allosteric/covalent control",
+                "Glycogenolysis: glycogen phosphorylase, debranching enzyme, and reciprocal cascade control by glucagon/insulin/epinephrine",
+                "Glycogen storage diseases: Type I (von Gierke), Type II (Pompe), Type III (Cori), and Type V (McArdle)",
+                "Hexose Monophosphate (HMP) Shunt / Pentose Phosphate Pathway: oxidative NADPH production and non-oxidative sugar interconversions",
+                "Glucose-6-phosphate dehydrogenase (G6PD) deficiency, erythrocyte oxidative damage, and hemolytic crisis",
+                "Uronic acid pathway, and metabolism of fructose and galactose and their inherited metabolic deficiencies"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "300L": {
+      "level_name": "300 Level (Preclinical Year 2)",
+      "disciplines": {
+        "Anatomy": {
+          "courses": [
+            {
+              "course_code": "ANA 301",
+              "canonical_name": "Gross Anatomy of Head and Neck and Neuroanatomy",
+              "semester": "First Semester",
+              "system_region": "Head, Neck, and Central Nervous System",
+              "aliases": [
+                "ANA 301",
+                "Gross Anatomy of Head and Neck and Neuroanatomy",
+                "Head and Neck and Neuroanatomy",
+                "Gross Anatomy of Head and Neck",
+                "Neuroanatomy"
+              ],
+              "core_topics": [
+                "Skull osteology: neurocranium, viscerocranium, sutures, pterion, base of the skull foramina, and cranial fossae",
+                "Scalp: five anatomical layers, neurovascular supply, and clinical infection spread through emissary veins",
+                "Face: muscles of facial expression, facial nerve (CN VII) extra-cranial course, and facial vessels",
+                "Cervical fascia: investing, pretracheal, and prevertebral layers, carotid sheath, and retropharyngeal space",
+                "Cervical triangles: anterior triangle subdivisions, and posterior triangle boundaries and spinal accessory nerve",
+                "Temporal and infratemporal fossae: boundaries, muscles of mastication, mandibular nerve (V3), and maxillary artery",
+                "Temporomandibular joint (TMJ): articular surfaces, intra-articular disc, ligaments, and kinesiology",
+                "Submandibular region, parotid gland and bed, sublingual gland, and autonomic secretomotor pathways",
+                "Thyroid and parathyroid glands: morphology, fascial sheath, blood supplies, and recurrent laryngeal nerve relations",
+                "Pharynx and larynx: constrictor muscles, laryngeal cartilages, vocal folds, intrinsic muscles, and innervation",
+                "Gross neuroanatomy: meninges, dural venous sinuses, circle of Willis, brainstem (medulla, pons, midbrain), and 4th ventricle",
+                "Forebrain: cerebral hemispheres, sulci, gyri, Brodmann areas, basal ganglia, internal capsule, and ventricular system"
+              ]
+            },
+            {
+              "course_code": "ANA 303",
+              "canonical_name": "Histology of special senses and Neuro-histology/Histo-chemistry",
+              "semester": "First Semester",
+              "system_region": "Neurohistology and Organs of Special Sense",
+              "aliases": [
+                "ANA 303",
+                "Histology of special senses and Neuro-histology/Histo-chemistry",
+                "Neurohistology and Special Senses",
+                "Histology of Special Senses",
+                "Special Senses and Histochemistry"
+              ],
+              "core_topics": [
+                "Microscopic architecture of the cerebral neocortex: 6-layered cytoarchitecture, pyramidal and non-pyramidal neurons",
+                "Microscopic architecture of the cerebellar cortex: molecular, Purkinje, and granular cell layers and deep nuclei",
+                "Histology of the spinal cord: grey matter Rexed laminae, dorsal/ventral horn cells, and white matter funiculi",
+                "Brainstem histology: transverse sections across open/closed medulla, pons, and midbrain at collicular levels",
+                "Histology of peripheral nerves, epineurium, perineurium, endoneurium, Schwann cells, and Ranvier nodes",
+                "Autonomic and sensory ganglia microscopic distinction: pseudounipolar vs multipolar ganglionic neurons",
+                "Histology of the eye: layers of the cornea, sclera, uveal tract (choroid, ciliary body, iris), and crystalline lens",
+                "Retinal cytoarchitecture: 10 microscopic layers, rods and cones, bipolar cells, and ganglion cell layers",
+                "Histology of the inner ear: bony and membranous labyrinths, cochlea, organ of Corti, maculae, and cristae ampullares",
+                "Histology of the olfactory epithelium: supporting cells, basal cells, and bipolar sensory neurons",
+                "Histology of taste buds: neuroepithelial receptor cells, supporting cells, and papillae distribution",
+                "Principles and techniques of histochemistry and immunocytochemistry in neurobiology"
+              ]
+            },
+            {
+              "course_code": "ANA 305",
+              "canonical_name": "and Neuro-embryology development of Pharyngeal Apparatus",
+              "semester": "First Semester",
+              "system_region": "Head, Neck, and Neural Embryology",
+              "aliases": [
+                "ANA 305",
+                "Neuro-embryology and development of Pharyngeal Apparatus",
+                "Pharyngeal Apparatus and Neuro-embryology",
+                "Head and Neck Embryology and Neuroembryology"
+              ],
+              "core_topics": [
+                "Pharyngeal (branchial) arches: skeletal derivatives, muscular components, arterial arches, and cranial nerve supplies",
+                "Pharyngeal pouches: development of the tympanic cavity, palatine tonsils, thymus, and superior/inferior parathyroids",
+                "Pharyngeal clefts and membranes: fate of the 1st cleft and branchial fistula/cervical cyst anomalies",
+                "Development of the face: frontonasal prominence, maxillary, and mandibular prominences and their midline fusion",
+                "Development of primary and secondary palate, incisive foramen boundary, and cleft lip and cleft palate etiologies",
+                "Development of the tongue: lateral lingual swellings, tuberculum impar, copula, and distinct innervations",
+                "Development of thyroid and parathyroid glands: foramen cecum origin, thyroglossal duct migration, and cyst anomalies",
+                "Primary brain vesicles (prosencephalon, mesencephalon, rhombencephalon) and secondary brain vesicles",
+                "Development of the spinal cord: basal plate (motor), alar plate (sensory), sulcus limitans, and mantle/marginal zones",
+                "Development of the eye: optic groove, optic vesicle, optic stalk, lens placode, and choroid fissure closure",
+                "Development of the ear: otic placode, otocyst, ossicles, tympanic membrane, and external auditory meatus",
+                "Neural tube defects: craniorachischisis, anencephaly, encephalocele, and spina bifida cystica and occulta"
+              ]
+            },
+            {
+              "course_code": "ANA 307",
+              "canonical_name": "Human Genetics",
+              "semester": "First Semester",
+              "system_region": "Medical Cytogenetics and Human Genetics",
+              "aliases": [
+                "ANA 307",
+                "Medical Genetics",
+                "Cytogenetics",
+                "Human Genetics and Genomics"
+              ],
+              "core_topics": [
+                "Chromosomal theory of inheritance, human chromosome structure, telomeres, and centromeres",
+                "Cell division: mitotic stages and meiotic reduction division, crossing over, and gametic genetic variation",
+                "Techniques of human cytogenetics: cell culture, metaphase arrest, G-banding, karyotyping, and idiograms",
+                "Numerical chromosomal aberrations: non-disjunction, aneuploidy, trisomies (21, 18, 13), and monosomy (45,X)",
+                "Structural chromosomal aberrations: translocations (Robertsonian and reciprocal), deletions, duplications, and inversions",
+                "Sex chromosome anomalies: Klinefelter syndrome (47,XXY), Turner syndrome (45,X), and Barr body Lyonization",
+                "Mendelian inheritance patterns: autosomal dominant, autosomal recessive, and construction of family pedigrees",
+                "Sex-linked inheritance: X-linked recessive, X-linked dominant, and Y-linked transmission dynamics",
+                "Non-Mendelian inheritance: mitochondrial inheritance, heteroplasmy, genomic imprinting, and anticipation",
+                "Trinucleotide repeat expansion disorders: fragile X syndrome and Huntington's disease molecular pathology",
+                "Molecular cytogenetics: Fluorescence In Situ Hybridization (FISH), gene hybridization, and array CGH",
+                "Population genetics: Hardy-Weinberg equilibrium, allele and genotype frequencies, and mutation selection balance"
+              ]
+            },
+            {
+              "course_code": "ANA 309",
+              "canonical_name": "Laboratory Techniques for Light Microscopy/Gross Radiologic Techniques",
+              "semester": "First Semester",
+              "system_region": "Microtechnique and Applied Radiological Anatomy",
+              "aliases": [
+                "ANA 309",
+                "Laboratory Techniques for Light Microscopy and Gross Radiologic Techniques",
+                "Histological and Radiologic Techniques",
+                "Microtechnique and Radiological Anatomy"
+              ],
+              "core_topics": [
+                "Histological tissue preparation: tissue sampling, chemical fixatives, and fixation mechanisms",
+                "Tissue processing: dehydration in ascending alcohols, clearing agents, paraffin wax infiltration, and embedding",
+                "Microtomy: rotary microtome operation, knife types, sectioning thickness, and section mounting",
+                "Routine and specialized staining: Hematoxylin and Eosin (H&E) staining principles and slide coverslipping",
+                "Special stains: Periodic acid-Schiff (PAS), Masson's trichrome, Verhoeff-Van Gieson, and silver impregnation",
+                "Advanced light microscopy: polarizing microscopy, phase-contrast microscopy, and dark-field microscopy principles",
+                "Interference and ultraviolet/fluorescence microscopy principles and biological applications",
+                "Basic physical principles of diagnostic radiological imaging and plain X-ray beam generation",
+                "Radio-opacity and radiolucency densities: air, fat, water/soft tissue, bone, and contrast agents",
+                "Normal radiological anatomy of major skeletal regions, chest, and plain abdominal radiographs",
+                "Introduction to modern cross-sectional imaging: computed tomography (CT) and magnetic resonance imaging (MRI)",
+                "Radiation biology fundamentals, radiological hazards, and occupational and patient safety measures"
+              ]
+            }
+          ]
+        },
+        "Physiology": {
+          "courses": [
+            {
+              "course_code": "PIO 301",
+              "canonical_name": "Gastrointestinal Physiology",
+              "semester": "First Semester",
+              "system_region": "Gastrointestinal System",
+              "aliases": [
+                "PHS 301",
+                "PIO 301",
+                "GIT Physiology",
+                "Physiology of the Alimentary Tract",
+                "Digestive Physiology"
+              ],
+              "core_topics": [
+                "Physiologic anatomy of the gastrointestinal tract and enteric nervous system (myenteric and submucosal plexuses)",
+                "Electrical activity of GI smooth muscle: slow waves, interstitial cells of Cajal, and spike potentials",
+                "Gastrointestinal endocrine control: physiological actions of gastrin, CCK, secretin, GIP, and motilin",
+                "Mastication, salivary glands functional organization, salivary secretion phases, and deglutition stages",
+                "Gastric motility: receptive relaxation, gastric pump contractions, retropulsion, and gastric emptying control",
+                "Gastric secretions: hydrochloric acid biosynthesis by parietal cells, pepsinogen activation, and intrinsic factor",
+                "Regulation of gastric secretion: cephalic, gastric, and intestinal phases, and mucosal protection mechanisms",
+                "Exocrine pancreatic secretion: aqueous bicarbonate vs enzyme components, and secretin/CCK regulation",
+                "Liver and biliary physiology: bile formation, bile acid synthesis, enterohepatic circulation, and gallbladder motility",
+                "Motility of the small intestine (segmentation and peristalsis) and migrating motor complex (MMC)",
+                "Colonic motility, haustral churning, mass movements, and autonomic regulation of the defecation reflex",
+                "Digestion and intestinal absorption of carbohydrates, proteins, lipids, water, electrolytes, and vitamins"
+              ]
+            },
+            {
+              "course_code": "PIO 303",
+              "canonical_name": "Endocrinology and Reproduction",
+              "semester": "First Semester",
+              "system_region": "Endocrinology and Reproductive Physiology",
+              "aliases": [
+                "PHS 303",
+                "PIO 303",
+                "Endocrine and Reproductive Physiology",
+                "Endocrinology",
+                "Reproductive Physiology"
+              ],
+              "core_topics": [
+                "General principles of hormone classification, transport, hormone-receptor interactions, and feedback loops",
+                "Cellular mechanisms of hormone action: cAMP, IP3/DAG, receptor tyrosine kinases, and nuclear receptors",
+                "Hypothalamo-pituitary axis: neurovascular portal system, hypothalamic releasing hormones, and feedback controls",
+                "Anterior pituitary hormones: growth hormone physiology, somatomedins (IGF-1), and prolactin actions",
+                "Posterior pituitary hormones: antidiuretic hormone (vasopressin) and oxytocin actions and reflexes",
+                "Thyroid gland: iodide uptake, thyroglobulin iodination, T3/T4 metabolic effects, and hypothalamic-pituitary control",
+                "Adrenal cortex physiology: zona glomerulosa, fasciculata, and reticularis hormones, and RAAS/ACTH regulation",
+                "Calcium and phosphate homeostasis: parathyroid hormone, calcitonin, and 1,25-dihydroxycholecalciferol (Vitamin D3)",
+                "Endocrine pancreas: insulin and glucagon biosynthesis, metabolic effects, and glucose counter-regulatory mechanisms",
+                "Male reproduction: testicular Leydig and Sertoli cell functions, spermatogenesis, semen analysis, and testosterone",
+                "Female reproduction: oogenesis, ovarian and uterine menstrual cycles, ovulation surge, and estrogen/progesterone",
+                "Physiology of pregnancy, human chorionic gonadotropin (hCG), parturition, lactation, and contraception methods"
+              ]
+            },
+            {
+              "course_code": "PIO 305",
+              "canonical_name": "Pathophysiology I",
+              "semester": "First Semester",
+              "system_region": "Systemic Pathophysiology (Blood, CVS, Respiration, Renal)",
+              "aliases": [
+                "PHS 305",
+                "PIO 305",
+                "General Pathophysiology",
+                "Pathophysiology of Body Systems I"
+              ],
+              "core_topics": [
+                "Cellular adaptations to injury and stress: hypertrophy, hyperplasia, atrophy, and metaplasia mechanisms",
+                "Mechanisms of cell injury: free radical-mediated damage, hypoxia/ischemia, necrosis, and apoptosis cascades",
+                "Pathophysiology of red cell disorders: nutritional deficiency anaemias, aplastic anaemia, and sickle cell crises",
+                "Pathophysiology of haemostasis: thrombocytopenic purpuras, coagulopathies, and disseminated intravascular coagulation",
+                "Cardiovascular pathophysiology: cardiac arrhythmias, heart block types, and electrophysiological ectopic foci",
+                "Pathophysiology of ischemic heart disease: angina pectoris, coronary occlusion, and myocardial infarction",
+                "Pathophysiology of congestive heart failure: forward and backward failure and compensatory mechanisms",
+                "Pathophysiology of systemic arterial hypertension, hypertensive crisis, and circulatory shock stages",
+                "Pathophysiology of pulmonary diseases: obstructive (asthma, COPD) vs restrictive disorders, and FEV1/FVC ratios",
+                "Pathophysiology of pulmonary edema, acute respiratory distress syndrome (ARDS), and cyanosis types",
+                "Renal pathophysiology: nephritic syndrome vs nephrotic syndrome, proteinuria, and glomerular injury",
+                "Pathophysiology of acute kidney injury (prerenal, intrarenal, postrenal) and chronic renal failure"
+              ]
+            },
+            {
+              "course_code": "PIO 307",
+              "canonical_name": "Teaching and Laboratory Instrumentation",
+              "semester": "First Semester",
+              "system_region": "Physiological Experimental Techniques and Instrumentation",
+              "aliases": [
+                "PHS 307",
+                "PIO 307",
+                "Laboratory Teaching and Instrumentation",
+                "Physiological Instrumentation",
+                "Practical Physiology Instrumentation"
+              ],
+              "core_topics": [
+                "Principles and calibration of physiological bio-amplifiers, transducers, and digital data acquisition systems",
+                "Recording and interpretation of standard 12-lead electrocardiography (ECG) and vector analysis",
+                "Arterial blood pressure monitoring: indirect auscultatory sphygmomanometry and oscillometric techniques",
+                "Pulmonary function instrumentation: spirometry calibration, spirograms, and vitalograph interpretation",
+                "Electrophysiological recording equipment: electromyography (EMG), nerve conduction studies, and oscilloscope use",
+                "Hematological diagnostic techniques: hemocytometer counting, microhematocrit centrifugation, and spectrophotometry",
+                "Principles of clinical urinalysis: dipstick chemistry, urine specific gravity, and urine sediment microscopy",
+                "In vitro organ bath systems: isolated smooth and cardiac muscle preparations and dose-response pharmacology",
+                "Laboratory safety standards, handling of biological specimens, and chemical hazard containment",
+                "Design and pedagogical execution of physiological laboratory demonstrations for medical education",
+                "Statistical analysis and error evaluation of physiological experimental data and biophysical measurements",
+                "Maintenance, troubleshooting, and quality control of physiological laboratory diagnostic devices"
+              ]
+            },
+            {
+              "course_code": "PIO 309",
+              "canonical_name": "Neuroendocrinology",
+              "semester": "First Semester",
+              "system_region": "Neuroendocrine Integration",
+              "aliases": [
+                "PHS 309",
+                "PIO 309",
+                "Neuroendocrine Physiology",
+                "Hypothalamo-Pituitary Physiology"
+              ],
+              "core_topics": [
+                "Functional neuroanatomy and embryological organization of the hypothalamo-hypophyseal system",
+                "Hypothalamic hypophyseotropic releasing and inhibiting hormones: TRH, CRH, GnRH, GHRH, somatostatin, and dopamine",
+                "Architecture of the hypophyseal portal microcirculation and short/long-loop servomechanism feedback systems",
+                "Supraoptic and paraventricular nuclei: synthesis, neurophysin transport, and secretion of ADH and oxytocin",
+                "Neuroendocrine control of growth, metabolic development, and the hypothalamic-pituitary-somatotropic axis",
+                "Neuroendocrine regulation of reproduction: pulsatile GnRH secretion, luteinizing hormone surge, and feedback loops",
+                "The hypothalamic-pituitary-adrenal (HPA) axis: diurnal ACTH circadian rhythm and neuroendocrine stress responses",
+                "Pineal gland physiology, melatonin biosynthesis from serotonin, and circadian rhythm entrainment via suprachiasmatic nucleus",
+                "Neuroendocrine regulation of energy intake, appetite control: leptin, ghrelin, NPY, and POMC pathways",
+                "Endogenous opioid peptides (endorphins, enkephalins) and their neuroendocrine modulating functions",
+                "Neuroendocrine disorders: diabetes insipidus, SIADH, hyperprolactinemia, and pituitary adenoma endocrinopathies",
+                "Autonomic-endocrine interactions in metabolic homeostasis and emergency neuroendocrine stress responses"
+              ]
+            },
+            {
+              "course_code": "PIO 311",
+              "canonical_name": "Pathophysiology II",
+              "semester": "First Semester",
+              "system_region": "Systemic Pathophysiology (GIT, Endocrine, CNS)",
+              "aliases": [
+                "PHS 311",
+                "PIO 311",
+                "Pathophysiology of Body Systems II",
+                "Special Pathophysiology"
+              ],
+              "core_topics": [
+                "Pathophysiology of gastrointestinal motility: achalasia cardia, dysphagia, paralytic ileus, and bowel obstruction",
+                "Pathophysiology of peptic ulcer disease: Helicobacter pylori pathogenesis, Zollinger-Ellison syndrome, and mucosal erosion",
+                "Pathophysiology of vomiting, diarrhea, malabsorption syndromes, and inflammatory bowel diseases",
+                "Hepatobiliary pathophysiology: hepatic failure, portal hypertension, ascites, and classification of jaundices",
+                "Pathophysiology of the anterior pituitary: gigantism, acromegaly, pituitary dwarfism, and hypopituitarism",
+                "Pathophysiology of thyroid gland: Graves' hyperthyroidism, thyrotoxicosis, endemic goitre, cretinism, and myxedema",
+                "Pathophysiology of adrenal cortex: Cushing's syndrome, Addison's disease, and primary hyperaldosteronism (Conn's)",
+                "Pathophysiology of diabetes mellitus: Type 1 vs Type 2 pathogenesis, diabetic ketoacidosis, and chronic angiopathies",
+                "Disorders of the motor nervous system: upper vs lower motor neuron lesions, and ALS pathophysiology",
+                "Basal ganglia disorders: Parkinson's disease, Huntington's chorea, hemiballismus, and involuntary movement disorders",
+                "Pathophysiology of sensory disturbances: tabes dorsalis, syringomyelia, thalamic pain syndrome, and brown-sequard",
+                "Pathophysiology of epilepsy, seizure classifications, demyelinating disease (multiple sclerosis), and myasthenia gravis"
+              ]
+            }
+          ]
+        },
+        "Biochemistry": {
+          "courses": [
+            {
+              "course_code": "BCH 301",
+              "canonical_name": "Metabolism of Nucleic Acid and Protein Synthesis",
+              "semester": "First Semester",
+              "system_region": "Nucleotide Metabolism and Protein Biosynthesis",
+              "aliases": [
+                "BCH 301",
+                "Nucleic Acid Metabolism and Protein Synthesis",
+                "Metabolism of Nucleic Acids",
+                "Protein Biosynthesis"
+              ],
+              "core_topics": [
+                "De novo purine nucleotide biosynthesis: PRPP synthetase, 10-step synthesis of IMP, and reciprocal AMP/GMP regulation",
+                "Purine salvage pathway: HGPRT and APRT reactions, Lesch-Nyhan syndrome, and gout pathophysiology",
+                "Purine catabolism: xanthine oxidase mechanism, uric acid generation, hyperuricemia, and allopurinol action",
+                "Pyrimidine nucleotide synthesis: CAD complex, UMP synthesis, CTP production, and orotic acidurias",
+                "Deoxyribonucleotide synthesis: ribonucleotide reductase regulation, and thymidylate synthase inhibition by 5-fluorouracil",
+                "DNA replication enzymology in prokaryotes and eukaryotes: DNA polymerases, helicases, topoisomerases, and telomerase",
+                "Mechanisms of DNA repair: nucleotide excision repair, base excision repair, and mismatch repair defects",
+                "Prokaryotic and eukaryotic transcription: RNA polymerases, promoters, enhancers, and transcription factors",
+                "Post-transcriptional modifications: 5'-capping, 3'-polyadenylation, and spliceosome-mediated intron splicing",
+                "The genetic code: non-overlapping, degenerate, universal triplets, start/stop codons, and wobble hypothesis",
+                "Amino acid activation, aminoacyl-tRNA synthetases, and ribosomal assembly (initiation, elongation, termination)",
+                "Post-translational modifications of nascent proteins, protein targeting, and antibiotic inhibitors of translation"
+              ]
+            },
+            {
+              "course_code": "BCH 303",
+              "canonical_name": "Integration of Metabolism",
+              "semester": "First Semester",
+              "system_region": "Metabolic Integration and Regulation",
+              "aliases": [
+                "BCH 303",
+                "Integration of Metabolic Pathways",
+                "Metabolic Regulation",
+                "Intermediary Metabolism Integration"
+              ],
+              "core_topics": [
+                "Mechanisms of metabolic regulation: enzyme compartmentalization, allosteric control, and covalent phosphorylation",
+                "Major metabolic crossroads: metabolic fates of glucose-6-phosphate, pyruvate, and acetyl-CoA",
+                "Organ-specific metabolic specializations: liver, skeletal muscle, heart, brain, and adipose tissue",
+                "The well-fed (absorptive) state: postprandial insulin surges, glycogenesis, lipogenesis, and protein synthesis",
+                "The fasting (post-absorptive) state: glucagon elevation, hepatic glycogenolysis, gluconeogenesis, and lipolysis",
+                "Metabolic adaptations during prolonged starvation: ketone body adaptation by the brain and muscle protein sparing",
+                "Hormonal coordination of fuel metabolism: reciprocal actions of insulin, glucagon, epinephrine, and cortisol",
+                "Inter-organ metabolic cycles: the Cori cycle, glucose-alanine cycle, and Randle (glucose-fatty acid) cycle",
+                "Metabolic derangements in Diabetes Mellitus: ketoacidosis, hyperosmolar states, and dyslipidemia",
+                "Role of AMP-activated protein kinase (AMPK) as a central cellular sensor of energy balance",
+                "Ethanol metabolism: alcohol dehydrogenase, MEOS pathway, elevated NADH/NAD+ ratio, and metabolic consequences",
+                "Biochemical basis of metabolic syndrome: insulin resistance, ectopic lipid deposition, and systemic lipotoxicity"
+              ]
+            },
+            {
+              "course_code": "BCH 305",
+              "canonical_name": "Nutrition",
+              "semester": "First Semester",
+              "system_region": "Human Nutrition and Clinical Biochemistry",
+              "aliases": [
+                "BCH 305",
+                "Human Nutrition",
+                "Nutritional Biochemistry",
+                "Principles of Nutrition"
+              ],
+              "core_topics": [
+                "Nutritional energy requirements: Caloric value of food, Basal Metabolic Rate (BMR), and Specific Dynamic Action (SDA)",
+                "Dietary carbohydrate, fat, and protein requirements, nitrogen balance (positive vs negative), and essential nutrients",
+                "Protein-energy malnutrition (PEM): biochemical lesions, pathophysiology, and clinical features of Kwashiorkor and Marasmus",
+                "Fat-soluble vitamins: structure, absorption, transport, biochemical functions, and deficiency/toxicity of Vitamins A, D, E, and K",
+                "Water-soluble B-complex vitamins (B1, B2, B3, B5, B6, B7): active coenzymes, biochemical pathways, and deficiencies",
+                "Folate and Vitamin B12: one-carbon unit transfers, homocysteine methylation, methyl trap, and megaloblastic anaemia",
+                "Vitamin C (ascorbic acid): collagen hydroxylation, antioxidant properties, and clinical manifestations of scurvy",
+                "Mineral metabolism: sodium, potassium, and chloride distributions, fluid balance, and water intake-output regulation",
+                "Calcium and phosphorus metabolism: intestinal absorption, bone remodeling, and hormonal regulation by PTH and calcitriol",
+                "Trace elements: iron absorption, transferrin, ferritin, iron deficiency anaemia, and hemochromatosis",
+                "Trace minerals: zinc, copper (Wilson's and Menkes diseases), selenium, iodine, and trace element deficiencies",
+                "Dietary fiber and antioxidant nutrients in the prevention of cardiovascular disease and metabolic disorders"
+              ]
+            },
+            {
+              "course_code": "BCH 307",
+              "canonical_name": "Biochemical Genetics and Molecular Biology",
+              "semester": "First Semester",
+              "system_region": "Molecular Biology and Recombinant Technology",
+              "aliases": [
+                "BCH 307",
+                "Biochemical Genetics",
+                "Molecular Biology and Genetics",
+                "Recombinant DNA Technology"
+              ],
+              "core_topics": [
+                "Prokaryotic and eukaryotic gene structure: promoters, operons (lac operon), introns, exons, and regulatory elements",
+                "Regulation of eukaryotic gene expression: chromatin remodeling, histone acetylation/methylation, and transcription factors",
+                "Molecular basis of gene mutations: missense, nonsense, frameshift, splice-site mutations, and phenotypic effects",
+                "Molecular pathology of hemoglobinopathies: sickle cell anemia (HbS point mutation) and alpha/beta thalassemias",
+                "Recombinant DNA technology: restriction endonucleases, DNA ligases, and cloning vectors (plasmids, phages, BACs)",
+                "Generation of genomic and complementary DNA (cDNA) libraries, and screening by hybridization",
+                "Polymerase Chain Reaction (PCR): reaction mechanics, primer design, RT-PCR, quantitative real-time PCR, and diagnostic uses",
+                "Molecular blotting techniques: Southern blotting (DNA), Northern blotting (RNA), and Western blotting (proteins)",
+                "DNA sequencing methodologies: Sanger dideoxy method, automated fluorescence sequencing, and Next-Generation Sequencing (NGS)",
+                "Recombinant protein expression: therapeutic production of human insulin, growth hormone, and monoclonal antibodies",
+                "Principles of gene therapy: viral/non-viral vectors, ex vivo vs in vivo approaches, and CRISPR-Cas9 gene editing",
+                "Personalized medicine: pharmacogenomics, genetic polymorphic variations, and individual therapeutic optimization"
+              ]
+            },
+            {
+              "course_code": "BCH 309",
+              "canonical_name": "Special Topics",
+              "semester": "First Semester",
+              "system_region": "Special Topics and Applied Medical Biochemistry",
+              "aliases": [
+                "BCH 309",
+                "Special Topics in Biochemistry",
+                "Special Topics in Medical Biochemistry",
+                "Advanced Topics in Biochemistry"
+              ],
+              "core_topics": [
+                "Hormone biochemistry: chemical classes, biosynthesis, and second messenger signalling mechanisms (cAMP, IP3, DAG, tyrosine kinase)",
+                "Metabolism of xenobiotics: Phase I functionalization (Cytochrome P450 isozymes) and Phase II conjugation reactions",
+                "Detoxification pathways, microsomal enzyme induction, inhibition, and mechanisms of biochemical drug resistance",
+                "Forensic biochemistry: DNA profiling, short tandem repeats (STRs), medico-legal fluid, blood, and sweat analysis",
+                "Biochemistry of aging and cellular senescence: telomere shortening, cumulative oxidative damage, and advanced glycation products",
+                "Biochemical mechanisms of apoptosis: intrinsic (mitochondrial/cytochrome c) and extrinsic (death receptor) pathways",
+                "Neurobiochemistry: neurotransmitters (acetylcholine, dopamine, GABA, glutamate) biosynthesis, degradation, and receptors",
+                "Biochemistry of muscle contraction: actomyosin ATP cross-bridge cycle and metabolic pathways during intense exercise",
+                "Heme biosynthesis pathway, control by ALA synthase, porphyrias, and bilirubin metabolism and hyperbilirubinemias",
+                "Molecular biochemistry of oncogenesis: proto-oncogenes, viral oncogenes, tumor suppressor genes (TP53, RB1), and apoptosis evasion",
+                "Biochemical features of viral infections: retroviral reverse transcriptase, HIV replication cycle, and antiviral targets",
+                "Molecular genetics of Burkitt's lymphoma: c-myc translocation, chromosome 8:14 rearrangement, and metabolic features of tropical diseases"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

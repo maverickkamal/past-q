@@ -41,12 +41,13 @@ def save_exam(
 ) -> None:
     """Inserts or updates an exam record in the exams table."""
     query = """
-    INSERT INTO exams (id, source_document, academic_year, discipline, paper_title, exam_type, examiner)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO exams (id, source_document, academic_year, discipline, level, paper_title, exam_type, examiner)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
         source_document = excluded.source_document,
         academic_year = excluded.academic_year,
         discipline = excluded.discipline,
+        level = excluded.level,
         paper_title = excluded.paper_title,
         exam_type = excluded.exam_type,
         examiner = excluded.examiner;
@@ -59,6 +60,7 @@ def save_exam(
                 source_document,
                 exam_pointer.session,
                 exam_pointer.discipline,
+                exam_pointer.level,
                 exam_pointer.paper_title,
                 exam_type,
                 exam_pointer.examiner,
@@ -81,13 +83,15 @@ def save_question(
     query = """
     INSERT INTO questions (
         id, exam_id, question_number, category, sub_type, discipline,
-        system_region, topic, examiner, curriculum_style, stem_text,
+        level, course_code, system_region, topic, examiner, curriculum_style, stem_text,
         items_json, total_marks, has_diagram, diagram_path, review_status, flag_reasons
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
         category = excluded.category,
         sub_type = excluded.sub_type,
         discipline = excluded.discipline,
+        level = excluded.level,
+        course_code = excluded.course_code,
         system_region = excluded.system_region,
         topic = excluded.topic,
         examiner = excluded.examiner,
@@ -111,6 +115,8 @@ def save_question(
                 question.category,
                 question.sub_type,
                 question.discipline,
+                question.level,
+                question.course_code,
                 question.system_region,
                 question.topic,
                 question.examiner,
@@ -131,6 +137,10 @@ def save_question(
 
 def get_questions_by_filter(
     discipline: str | None = None,
+    level: str | None = None,
+    category: str | None = None,
+    system_region: str | None = None,
+    course_code: str | None = None,
     topic: str | None = None,
     examiner: str | None = None,
     review_status: str | None = None,
@@ -143,6 +153,18 @@ def get_questions_by_filter(
     if discipline:
         query += " AND discipline = ?"
         params.append(discipline)
+    if level and level != "UNKNOWN":
+        query += " AND level = ?"
+        params.append(level)
+    if category and category != "UNKNOWN":
+        query += " AND category = ?"
+        params.append(category)
+    if system_region:
+        query += " AND system_region LIKE ?"
+        params.append(f"%{system_region}%")
+    if course_code:
+        query += " AND course_code = ?"
+        params.append(course_code)
     if topic:
         query += " AND topic LIKE ?"
         params.append(f"%{topic}%")

@@ -35,6 +35,8 @@ Your responsibility:
 3. For each detected examination, emit an ExamPointer specifying:
    - exam_id: A deterministic slug combining discipline, session, and paper (e.g. 'ANA_2012_CAT_P1', 'PHY_2013_PROF_P2').
    - discipline: Exactly one of 'Anatomy', 'Physiology', or 'Biochemistry'.
+   - level: '200L' if 200 Level (e.g., 200 series course codes ANA 201/202, 200L C.A., 2nd Year), '300L' if 300 Level (e.g., 300 series course codes ANA 301, 3rd Year, Part 1 MBBS), or 'UNKNOWN'.
+   - category: One of 'CA_QUIZ' (continuous assessments/in-course tests/quizzes), 'STEEPLECHASE' (practical/spotter/station exams), 'ESSAY' (essay/SEQ/SAQ papers), 'OBJECTIVE' (pure MCQ papers).
    - paper_title: The official title (e.g. '200L First Semester Continuous Assessment Test', 'Paper I (Gross Anatomy)').
    - session: The academic session (e.g. '2012/2013') or 'UNKNOWN'.
    - examiner: The primary lecturer/examiner if indicated, otherwise 'UNKNOWN'.
