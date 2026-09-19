@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS questions (
     diagram_path TEXT,                         -- Local path to WebP asset
     review_status TEXT DEFAULT 'APPROVED',     -- APPROVED | NEEDS_REVIEW
     flag_reasons TEXT,                         -- Diagnostic validation messages
+    recurrence_count INTEGER DEFAULT 1,        -- Number of times similar question appeared across sessions
+    recurrence_cluster_id TEXT,                -- Deterministic cluster ID for recurring questions
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -50,3 +52,6 @@ ON questions (examiner);
 
 CREATE INDEX IF NOT EXISTS idx_questions_status 
 ON questions (review_status);
+
+CREATE INDEX IF NOT EXISTS idx_questions_recurrence
+ON questions (recurrence_cluster_id);

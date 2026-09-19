@@ -328,3 +328,54 @@ def get_database_stats(db_path: str | Path | None = None) -> dict[str, Any]:
         "approved_questions": approved_questions,
         "needs_review_questions": review_questions,
     }
+
+
+def update_recurrence_info(
+    question_id: str,
+    cluster_id: str,
+    count: int,
+    db_path: str | Path | None = None,
+) -> None:
+    """Updates recurrence count and cluster ID for a question."""
+    query = """
+    UPDATE questions 
+    SET recurrence_count = ?, recurrence_cluster_id = ?
+    WHERE id = ?
+    """
+    with get_connection(db_path) as conn:
+        conn.execute(query, (count, cluster_id, question_id))
+        conn.commit()
+
+
+def get_recurrence_clusters(
+    min_count: int = 2,
+    discipline: str | None = None,
+    db_path: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """Retrieves repeating question clusters ordered by frequency."""
+    query = """
+    SELECT q.*, e.academic_year, e.paper_title as exam_title
+    FROM questions q
+    JOIN exams e ON q.exam_id = e.id
+    WHERE q.recurrence_count >= ?
+    """
+    params: list[Any] = [min_count]
+
+    if discipline:
+        query += " AND q.discipline = ?"
+        params.append(discipline)
+
+    query += " ORDER BY q.recurrence_count DESC, q.recurrence_cluster_id ASC, e.academic_year ASC"
+
+    with get_connection(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        rows = [dict(row) for row in cursor.fetchall()]
+
+    for r in rows:
+        if r.get("items_json"):
+            r["items"] = json.loads(r["items_json"])
+        else:
+            r["items"] = []
+
+    return rows
