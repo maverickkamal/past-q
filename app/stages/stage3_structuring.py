@@ -17,6 +17,7 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
 from app.curriculum import (
+    get_canonical_system_regions,
     get_taxonomy_prompt_context,
     resolve_course_code,
     resolve_system_region,
@@ -27,7 +28,7 @@ logging.getLogger("google_genai.models").setLevel(logging.ERROR)
 
 load_dotenv()
 
-STAGE3_MODEL = os.getenv("STAGE3_MODEL", "gemini-flash-latest")
+STAGE3_MODEL = os.getenv("STAGE3_MODEL", "gemini-3.8-flash")
 
 STAGE3_SYSTEM_INSTRUCTION = """\
 You are an expert preclinical medical examination structuring agent.
@@ -67,6 +68,7 @@ In our preclinical database architecture, all in-course assessment items belong 
      If the paper is a summative Professional examination or Semester Final Examination consisting of multiple choice questions:
      -> `category` MUST BE 'OBJECTIVE'.
      -> `sub_type` MUST BE 'SBA' (Single Best Answer) or 'MULTIPLE_TRUE_FALSE' (Type X).
+     -> SPECIAL PRECLINICAL INVARIANT ("KILLER MCQ"): In preclinical Nigerian medical curricula, 'MULTIPLE_TRUE_FALSE' (5-part True/False stems with negative marking, often nicknamed "killer MCQs") is predominantly exclusive to Physiology. Anatomy and Biochemistry almost universally default to 'SBA' (Single Best Answer) unless stems explicitly contain 5 individual (a)-(e) propositions each requiring an explicit True/False determination.
 
 3. STEM VS. ITEMS DECOMPOSITION:
    - `stem_text`: The overarching clinical vignette, primary question prompt, or practical instruction.
@@ -97,9 +99,11 @@ In our preclinical database architecture, all in-course assessment items belong 
    - `total_marks`: Total explicit marks for the question if printed on the paper (e.g., '[15 marks]'). If not stated, set to `None`.
    - `marks` on items: Individual marks for each subpart if printed (e.g., '[5 marks]' -> 5). Otherwise `None`.
 
-7. ABSOLUTE ANTI-HALLUCINATION CONSTRAINT:
-   - NEVER invent, guess, solve, or output answers or answer keys (do NOT add "Answer: B" or explanations).
-   - Transcribe and structure only what is present on the paper.
+7. STRICT ANSWER SUPPRESSION & ANTI-HALLUCINATION CONSTRAINT:
+   - IGNORE ALL ANSWERS, ANSWER KEYS, SOLUTIONS, OR ANNOTATIONS: If the paper contains printed answer keys, model answers, explanations, solutions at the end of questions/sections, or handwritten student ticks/marks/circled options, STRICTLY IGNORE AND OMIT THEM.
+   - Do NOT transcribe or include answer keys or solutions in `stem_text`, `items`, or any other field.
+   - NEVER invent, guess, solve, or output answers or answer keys (do NOT add "Answer: B", "Ans: True", or explanations).
+   - Transcribe and structure only the questions and choices/subparts themselves as un-answered exam prompts.
 """
 
 
@@ -220,9 +224,11 @@ async def structure_exam_paper(
 
     # Post-processing normalization against canonical taxonomy
     for q in batch.questions:
-        # 1. Inherit level from pointer if question level is unknown
+        # 1. Inherit level and institution from pointer if unknown
         if (q.level == "UNKNOWN" or not q.level) and pointer.level != "UNKNOWN":
             q.level = pointer.level
+        if (getattr(q, "institution", "UNKNOWN") == "UNKNOWN" or not getattr(q, "institution", None)) and pointer.institution != "UNKNOWN":
+            q.institution = pointer.institution
 
         # 2. Normalize system_region deterministically
         effective_disc = q.discipline or pointer.discipline

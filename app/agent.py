@@ -21,7 +21,7 @@ from google.adk.agents import SequentialAgent
 from app.config import DATABASE_PATH, PAGE_CHUNK_SIZE
 from app.database import get_database_stats, init_db, persist_validated_exam
 from app.schemas import ExamManifest, ExamPointer, PreScanMetadata, QuestionBatch, StructuredQuestion
-from app.stages.stage0_scanner import scan_exam_file
+from app.stages.stage0_scanner import is_pdf_password_protected, scan_exam_file
 from app.stages.stage1_transcriber import create_stage1_agent, run_stage1
 from app.stages.stage2_manifest import (
     assemble_master_markdown,
@@ -39,13 +39,10 @@ transcriber_agent = create_stage1_agent()
 manifest_agent = create_stage2_agent()
 structuring_agent = create_stage3_agent()
 
-# 2. Define Master SequentialAgent Entry Point (ADK Convention)
+# 2. Sequential ADK Coordinator
 root_agent = SequentialAgent(
     name="medical_past_questions_pipeline",
-    description=(
-        "Master preclinical medical past questions ingestion pipeline. "
-        "Orchestrates vision transcription, manifest boundary slicing, and deep structuring in sequence."
-    ),
+    description="Sequential multi-agent orchestrator transforming medical past-question PDFs into structured SQLite records.",
     sub_agents=[
         transcriber_agent,
         manifest_agent,
@@ -65,6 +62,7 @@ class PipelineReport(BaseModel):
     needs_review_questions: int
     duration_seconds: float
     persisted_db: str
+    status: str = "COMPLETED"
 
 
 async def run_pipeline(
@@ -100,6 +98,22 @@ async def run_pipeline(
     target_db = str(db_path or DATABASE_PATH)
     init_db(target_db)
 
+    # Password-protected / encrypted PDF check guard
+    if is_pdf_password_protected(pdf_file):
+        print(f"\n[WARNING] PDF '{pdf_file.name}' is password-protected or encrypted. Skipping ingestion gracefully.\n")
+        return PipelineReport(
+            source_pdf=pdf_file.name,
+            pre_scan_metadata=PreScanMetadata(source_file=pdf_file.name),
+            manifest=ExamManifest(exams=[]),
+            total_exams=0,
+            total_questions=0,
+            approved_questions=0,
+            needs_review_questions=0,
+            duration_seconds=time.time() - start_time,
+            persisted_db=target_db,
+            status="SKIPPED_PASSWORD_PROTECTED",
+        )
+
     print(f"\n=======================================================")
     print(f"STARTING MEDICAL PQ INGESTION PIPELINE")
     print(f"Source PDF: {pdf_file.name}")
@@ -110,22 +124,21 @@ async def run_pipeline(
     print(f"[Stage 0] Pre-scanning {pdf_file.name}...")
     pre_scan_meta = scan_exam_file(pdf_file)
     print(
-        f"  Discipline: {pre_scan_meta.discipline} | Session: {pre_scan_meta.session} | "
-        f"Examiner: {pre_scan_meta.examiner} | Topic: {pre_scan_meta.topic}"
+        f"  Discipline: {pre_scan_meta.discipline} | Institution: {pre_scan_meta.institution} | "
+        f"Session: {pre_scan_meta.session} | Examiner: {pre_scan_meta.examiner} | Topic: {pre_scan_meta.topic}"
     )
 
     # --- STAGE 1: CHUNKED INGESTION & VISION TRANSCRIBER ---
-    print(f"\n[Stage 1] Transcribing PDF via Gemini Flash (10-page in-memory chunks)...")
-    markdown_chunks = await run_stage1(
-        pdf_path=pdf_file,
+    print(f"\n[Stage 1] Transcribing PDF via Gemini Flash ({PAGE_CHUNK_SIZE}-page in-memory chunks)...")
+    master_md = await run_stage1(
+        pdf_source=pdf_file,
         chunk_size=PAGE_CHUNK_SIZE,
         agent=transcriber_agent,
     )
-    print(f"  Completed transcription of {len(markdown_chunks)} chunk(s).")
+    print(f"  Completed transcription ({len(master_md)} characters).")
 
     # --- STAGE 2: MASTER ASSEMBLY & POINTER-ONLY MANIFEST ---
-    print(f"\n[Stage 2] Assembling master markdown and generating pointer manifest...")
-    master_md = assemble_master_markdown(markdown_chunks)
+    print(f"\n[Stage 2] Generating pointer manifest...")
     manifest = await generate_manifest(master_md, pre_scan_meta=pre_scan_meta, agent=manifest_agent)
     print(f"  Identified {len(manifest.exams)} exam paper(s) in booklet:")
     for ep in manifest.exams:
@@ -201,17 +214,60 @@ async def run_pipeline(
     )
 
 
+async def run_batch_or_single(
+    target_path: str | Path,
+    exam_type: str = "MBBS_EXAM",
+    db_path: str | Path | None = None,
+    auto_recurrence: bool = False,
+) -> list[PipelineReport]:
+    """Ingests a single PDF file or all PDFs within a target directory."""
+    path = Path(target_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Source path not found: {path}")
+
+    if path.is_dir():
+        pdf_files = sorted([p for p in path.rglob("*.pdf") if not p.name.startswith("._")])
+        print(f"\nDiscovered {len(pdf_files)} PDF file(s) in '{path.name}' to ingest.\n", flush=True)
+    else:
+        pdf_files = [path]
+
+    reports: list[PipelineReport] = []
+    for i, pdf_file in enumerate(pdf_files, 1):
+        if len(pdf_files) > 1:
+            print(f"\n=======================================================", flush=True)
+            print(f"[{i}/{len(pdf_files)}] PROCESSING: {pdf_file.name}", flush=True)
+            print(f"=======================================================\n", flush=True)
+
+        report = await run_pipeline(
+            pdf_path=pdf_file,
+            exam_type=exam_type,
+            db_path=db_path,
+            auto_recurrence=False,
+        )
+        reports.append(report)
+
+    if auto_recurrence and any(r.total_questions > 0 for r in reports):
+        print("\n[Auto-Recurrence] Running TypeSafe Jev semantic recurrence clustering across all ingested exams...", flush=True)
+        try:
+            from app.recurrence import run_recurrence_matcher
+            run_recurrence_matcher(db_path=db_path, use_typesafe=True)
+        except Exception as e:
+            print(f"Warning: Auto-recurrence run encountered an error: {e}", flush=True)
+
+    return reports
+
+
 def main():
     parser = argparse.ArgumentParser(description="Medical Past Questions Ingestion Pipeline Orchestrator")
-    parser.add_argument("pdf", type=str, help="Path to past questions PDF file")
+    parser.add_argument("path", type=str, help="Path to past questions PDF file or directory of PDFs")
     parser.add_argument("--exam-type", type=str, default="MBBS_EXAM", help="Default exam type classification")
     parser.add_argument("--db", type=str, default=None, help="Custom SQLite database output path")
     parser.add_argument("--auto-recurrence", action="store_true", help="Run Jev cross-year recurrence analysis post-ingestion")
 
     args = parser.parse_args()
     asyncio.run(
-        run_pipeline(
-            pdf_path=args.pdf,
+        run_batch_or_single(
+            target_path=args.path,
             exam_type=args.exam_type,
             db_path=args.db,
             auto_recurrence=args.auto_recurrence,

@@ -16,11 +16,11 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from app.schemas import ExamManifest, ExamPointer
+from app.schemas import ExamManifest, ExamPointer, PreScanMetadata
 
 load_dotenv()
 
-STAGE2_MODEL = os.getenv("STAGE2_MODEL", "gemini-flash-latest")
+STAGE2_MODEL = os.getenv("STAGE2_MODEL", "gemini-3.5-flash-lite")
 
 STAGE2_SYSTEM_INSTRUCTION = """\
 You are an expert preclinical medical exam curator.
@@ -62,15 +62,17 @@ def create_stage2_agent(model_name: str | None = None) -> Agent:
 root_agent = create_stage2_agent()
 
 
-def assemble_master_markdown(chunk_transcriptions: list[str]) -> str:
+def assemble_master_markdown(chunk_transcriptions: list[str] | str) -> str:
     """Concatenates chunk markdown texts into a single master document.
 
     Args:
-        chunk_transcriptions: Ordered list of Markdown strings from Stage 1 chunks.
+        chunk_transcriptions: Ordered list of Markdown strings from Stage 1 chunks or a single unified Markdown string.
 
     Returns:
         Unified master Markdown document.
     """
+    if isinstance(chunk_transcriptions, str):
+        return chunk_transcriptions.strip()
     cleaned_chunks = [c.strip() for c in chunk_transcriptions if c and c.strip()]
     return "\n\n".join(cleaned_chunks)
 
@@ -143,6 +145,7 @@ async def generate_manifest(
     master_markdown: str,
     agent: Agent | None = None,
     app_name: str = "medical_exam_pipeline",
+    pre_scan_meta: PreScanMetadata | None = None,
 ) -> ExamManifest:
     """Executes the Stage 2 manifest agent turn and returns a validated ExamManifest.
 
@@ -150,6 +153,7 @@ async def generate_manifest(
         master_markdown: Full transcribed booklet markdown text.
         agent: Optional custom Agent instance.
         app_name: ADK application name.
+        pre_scan_meta: Optional pre-scan metadata for context hints.
 
     Returns:
         Pydantic ExamManifest object with all detected exam pointers.
@@ -171,8 +175,19 @@ async def generate_manifest(
         session_id=session_id,
     )
 
+    hints = ""
+    if pre_scan_meta:
+        hints = (
+            "Pre-scan detected booklet metadata:\n"
+            f"- Discipline hint: {pre_scan_meta.discipline}\n"
+            f"- Session hint: {pre_scan_meta.session}\n"
+            f"- Examiner hint: {pre_scan_meta.examiner}\n"
+            f"- Institution hint: {pre_scan_meta.institution}\n\n"
+        )
+
     prompt = (
         "Analyze the following transcribed past questions booklet markdown.\n"
+        f"{hints}"
         "Identify all examination boundaries, discipline, session, examiner, and page ranges.\n"
         "Emit the ExamManifest JSON object.\n\n"
         f"{master_markdown}"
@@ -198,4 +213,10 @@ async def generate_manifest(
     if not raw_json:
         raise RuntimeError("Stage 2 agent returned an empty response.")
 
-    return ExamManifest.model_validate_json(raw_json)
+    manifest = ExamManifest.model_validate_json(raw_json)
+    if pre_scan_meta:
+        for ep in manifest.exams:
+            if (ep.institution == "UNKNOWN" or not ep.institution) and pre_scan_meta.institution != "UNKNOWN":
+                ep.institution = pre_scan_meta.institution
+
+    return manifest

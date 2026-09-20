@@ -137,6 +137,7 @@ def export_study_set(
     course_code: str | None = None,
     topic: str | None = None,
     examiner: str | None = None,
+    institution: str | None = None,
     min_recurrence: int = 1,
     output_path: str | Path | None = None,
     db_path: str | Path | None = None,
@@ -150,13 +151,14 @@ def export_study_set(
         course_code=course_code,
         topic=topic,
         examiner=examiner,
+        institution=institution,
         db_path=db_path,
     )
 
     if min_recurrence > 1:
         questions = [q for q in questions if (q.get("recurrence_count") or 1) >= min_recurrence]
 
-    filter_tokens = [t for t in (discipline, level, category, system_region, topic) if t]
+    filter_tokens = [t for t in (discipline, level, category, system_region, topic, institution) if t]
     title_suffix = " - ".join(filter_tokens) if filter_tokens else "All Questions"
     title = f"Medical Past Questions Study Guide: {title_suffix}"
 
@@ -186,6 +188,7 @@ def main():
     parser.add_argument("--course", type=str, help="Filter by course code, e.g. 'ANA 201a'")
     parser.add_argument("--topic", type=str, help="Filter by topic keyword")
     parser.add_argument("--examiner", type=str, help="Filter by lecturer/examiner")
+    parser.add_argument("--institution", type=str, help="Filter by university/college institution (e.g. BUK, ABU, UNILAG)")
     parser.add_argument("--min-recurrence", type=int, default=1, help="Filter for questions repeated at least N times")
     parser.add_argument("--output", type=str, default=None, help="Target markdown output path")
     parser.add_argument("--db", type=str, default=None, help="Custom database path")
@@ -200,6 +203,7 @@ def main():
         course_code=args.course,
         topic=args.topic,
         examiner=args.examiner,
+        institution=args.institution,
         min_recurrence=args.min_recurrence,
         output_path=args.output,
         db_path=args.db,

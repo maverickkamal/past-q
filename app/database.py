@@ -20,9 +20,26 @@ def get_connection(db_path: str | Path | None = None) -> sqlite3.Connection:
 
 
 def init_db(db_path: str | Path | None = None, schema_file: str | Path | None = None) -> None:
-    """Initializes SQLite database tables and indexes from schema.sql."""
+    """Initializes SQLite database tables and indexes from schema.sql with automatic column migrations."""
     schema_to_run = Path(schema_file or SCHEMA_PATH).read_text(encoding="utf-8")
     with get_connection(db_path) as conn:
+        cursor = conn.cursor()
+        
+        # Check if tables already exist and require column migrations prior to schema execution (such as new index creation)
+        tables = [r["name"] for r in cursor.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()]
+        if "exams" in tables:
+            exam_cols = [r["name"] for r in cursor.execute("PRAGMA table_info(exams)").fetchall()]
+            if "institution" not in exam_cols:
+                cursor.execute("ALTER TABLE exams ADD COLUMN institution TEXT DEFAULT 'UNKNOWN';")
+
+        if "questions" in tables:
+            q_cols = [r["name"] for r in cursor.execute("PRAGMA table_info(questions)").fetchall()]
+            if "institution" not in q_cols:
+                cursor.execute("ALTER TABLE questions ADD COLUMN institution TEXT DEFAULT 'UNKNOWN';")
+
+        conn.commit()
+
+        # Run schema script (creates missing tables, views, and indexes)
         conn.executescript(schema_to_run)
         conn.commit()
 
@@ -37,12 +54,14 @@ def save_exam(
     exam_pointer: ExamPointer,
     source_document: str,
     exam_type: str = "MBBS_EXAM",
+    institution: str | None = None,
     db_path: str | Path | None = None,
 ) -> None:
     """Inserts or updates an exam record in the exams table."""
+    inst = institution or getattr(exam_pointer, "institution", "UNKNOWN") or "UNKNOWN"
     query = """
-    INSERT INTO exams (id, source_document, academic_year, discipline, level, paper_title, exam_type, examiner)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO exams (id, source_document, academic_year, discipline, level, paper_title, exam_type, examiner, institution)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
         source_document = excluded.source_document,
         academic_year = excluded.academic_year,
@@ -50,7 +69,8 @@ def save_exam(
         level = excluded.level,
         paper_title = excluded.paper_title,
         exam_type = excluded.exam_type,
-        examiner = excluded.examiner;
+        examiner = excluded.examiner,
+        institution = excluded.institution;
     """
     with get_connection(db_path) as conn:
         conn.execute(
@@ -64,6 +84,7 @@ def save_exam(
                 exam_pointer.paper_title,
                 exam_type,
                 exam_pointer.examiner,
+                inst,
             ),
         )
         conn.commit()
@@ -91,18 +112,20 @@ def save_question(
     question: StructuredQuestion,
     review_status: str = "APPROVED",
     flag_reasons: str | None = None,
+    institution: str | None = None,
     db_path: str | Path | None = None,
 ) -> str:
     """Inserts or replaces a structured question in the questions table."""
     q_id = make_question_id(exam_id, question.question_number)
     items_serialized = json.dumps([item.model_dump() for item in question.items])
+    inst = institution or getattr(question, "institution", "UNKNOWN") or "UNKNOWN"
 
     query = """
     INSERT INTO questions (
         id, exam_id, question_number, category, sub_type, discipline,
         level, course_code, system_region, topic, examiner, curriculum_style, stem_text,
-        items_json, total_marks, has_diagram, diagram_path, review_status, flag_reasons
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        items_json, total_marks, has_diagram, diagram_path, review_status, flag_reasons, institution
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
         category = excluded.category,
         sub_type = excluded.sub_type,
@@ -119,7 +142,8 @@ def save_question(
         has_diagram = excluded.has_diagram,
         diagram_path = excluded.diagram_path,
         review_status = excluded.review_status,
-        flag_reasons = excluded.flag_reasons;
+        flag_reasons = excluded.flag_reasons,
+        institution = excluded.institution;
     """
 
     with get_connection(db_path) as conn:
@@ -145,6 +169,7 @@ def save_question(
                 question.diagram_path,
                 review_status,
                 flag_reasons,
+                inst,
             ),
         )
         conn.commit()
@@ -160,6 +185,7 @@ def get_questions_by_filter(
     course_code: str | None = None,
     topic: str | None = None,
     examiner: str | None = None,
+    institution: str | None = None,
     review_status: str | None = None,
     db_path: str | Path | None = None,
 ) -> list[dict[str, Any]]:
@@ -188,6 +214,9 @@ def get_questions_by_filter(
     if examiner and examiner != "UNKNOWN":
         query += " AND examiner LIKE ?"
         params.append(f"%{examiner}%")
+    if institution and institution != "UNKNOWN":
+        query += " AND institution = ?"
+        params.append(institution)
     if review_status:
         query += " AND review_status = ?"
         params.append(review_status)

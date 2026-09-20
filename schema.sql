@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS exams (
     paper_title TEXT NOT NULL,                 -- e.g., 'Paper I (Gross Anatomy)'
     exam_type TEXT,                            -- Professional MBBS, In-Course Assessment
     examiner TEXT DEFAULT 'UNKNOWN',           -- Primary lecturer for the paper
+    institution TEXT DEFAULT 'UNKNOWN',        -- University/College e.g. BUK, ABU, UNILAG
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -37,10 +38,17 @@ CREATE TABLE IF NOT EXISTS questions (
     flag_reasons TEXT,                         -- Diagnostic validation messages
     recurrence_count INTEGER DEFAULT 1,        -- Number of times similar question appeared across sessions
     recurrence_cluster_id TEXT,                -- Deterministic cluster ID for recurring questions
+    institution TEXT DEFAULT 'UNKNOWN',        -- University/College e.g. BUK, ABU, UNILAG
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes for targeted study queries
+CREATE INDEX IF NOT EXISTS idx_exams_institution
+ON exams (institution);
+
+CREATE INDEX IF NOT EXISTS idx_questions_institution
+ON questions (institution);
+
 CREATE INDEX IF NOT EXISTS idx_questions_study_filter
 ON questions (level, discipline, category, system_region);
 

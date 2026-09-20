@@ -20,7 +20,7 @@ from app.tools.diagram_tool import crop_diagram_tool
 
 load_dotenv()
 
-STAGE1_MODEL = os.getenv("STAGE1_MODEL", "gemini-flash-latest")
+STAGE1_MODEL = os.getenv("STAGE1_MODEL", "gemini-3.5-flash-lite")
 
 STAGE1_SYSTEM_INSTRUCTION = """\
 You are an expert medical transcription agent specializing in preclinical exam booklets.
@@ -46,7 +46,11 @@ marks allocations ('[5 marks]'), and MCQ options ('A' through 'E').
 6. Delineate all booklet page transitions using this exact delimiter:
    <!-- PAGE BREAK [N] -->
    where [N] is the true booklet page number. Insert this delimiter at the start of each page's content.
-
+7. STRICT ANSWER KEY & SOLUTION SUPPRESSION:
+   - If the exam paper or booklet includes printed answer keys, solutions, model answers, answer sheets, or handwritten student answers/ticks/markings:
+     - DO NOT transcribe the answer keys, solutions, or student marks.
+     - Transcribe ONLY the question stems, options, essay prompts, and official mark allocations.
+     - NEVER output answers or solutions in the transcription.
 """
 
 
@@ -142,9 +146,12 @@ async def transcribe_chunk(
 
 
 async def run_stage1(
-    pdf_source: str | Path | bytes,
+    pdf_source: str | Path | bytes | None = None,
     max_chunks: int | None = None,
     chunk_size: int = PAGE_CHUNK_SIZE,
+    agent: Agent | None = None,
+    app_name: str = "medical_exam_pipeline",
+    pdf_path: str | Path | bytes | None = None,
 ) -> str:
     """Iterates through PDF chunks, transcribes content, and crops visuals using Google ADK.
 
@@ -152,28 +159,36 @@ async def run_stage1(
         pdf_source: Path to PDF or raw bytes.
         max_chunks: Optional limit on chunks to process (useful for testing).
         chunk_size: Pages per chunk (default from config: 10).
+        agent: Optional custom Agent instance.
+        app_name: ADK application name.
+        pdf_path: Alias for pdf_source.
 
     Returns:
         Assembled master Markdown document.
     """
-    agent = create_stage1_agent()
+    source = pdf_source or pdf_path
+    if source is None:
+        raise ValueError("pdf_source or pdf_path must be provided to run_stage1.")
+
+    agent_to_use = agent or create_stage1_agent()
     session_service = InMemorySessionService()
     artifact_service = InMemoryArtifactService()
 
     runner = Runner(
-        agent=agent,
+        agent=agent_to_use,
         session_service=session_service,
         artifact_service=artifact_service,
-        app_name="medical_exam_pipeline",
+        app_name=app_name,
     )
 
     assembled_markdown: list[str] = []
-    chunk_generator: Generator[PDFChunk, None, None] = slice_pdf_chunks(pdf_source, chunk_size=chunk_size)
+    chunk_generator: Generator[PDFChunk, None, None] = slice_pdf_chunks(source, chunk_size=chunk_size)
 
     for i, chunk in enumerate(chunk_generator):
         if max_chunks is not None and i >= max_chunks:
             break
 
+        print(f"  [Stage 1] Transcribing Chunk {chunk.chunk_index + 1} (Pages {chunk.start_page}-{chunk.end_page})...", flush=True)
         transcription = await transcribe_chunk(
             runner=runner,
             artifact_service=artifact_service,
@@ -182,5 +197,6 @@ async def run_stage1(
         )
         if transcription:
             assembled_markdown.append(transcription)
+            print(f"    -> Chunk {chunk.chunk_index + 1} completed ({len(transcription)} chars).", flush=True)
 
     return "\n\n".join(assembled_markdown)

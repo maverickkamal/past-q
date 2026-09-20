@@ -30,6 +30,7 @@ class StructuredQuestion(BaseModel):
     total_marks: int | None = Field(default=None, description="Total marks allocated to this question")
     has_diagram: bool = Field(default=False)
     diagram_path: str | None = Field(default=None, description="Relative path to cropped visual asset")
+    institution: str = Field(default="UNKNOWN", description="University or College e.g. BUK, ABU, UNILAG")
 
 
 class QuestionBatch(BaseModel):
@@ -45,6 +46,7 @@ class ExamPointer(BaseModel):
     paper_title: str = Field(description="e.g., 'Paper I (Gross Anatomy)'")
     session: str = Field(description="e.g., '2021/2022' or 'UNKNOWN'")
     examiner: str = Field(default="UNKNOWN", description="Primary examiner if identified")
+    institution: str = Field(default="UNKNOWN", description="University or College e.g. BUK, ABU, UNILAG")
     category: Literal["ESSAY", "OBJECTIVE", "STEEPLECHASE", "CA_QUIZ", "UNKNOWN"] = Field(
         default="UNKNOWN", description="Exam category: ESSAY, OBJECTIVE, STEEPLECHASE, or CA_QUIZ"
     )
@@ -65,4 +67,5 @@ class PreScanMetadata(BaseModel):
     examiner: str = "UNKNOWN"
     topic: str = "UNKNOWN"
     exam_type: str = "UNKNOWN"
+    institution: str = "UNKNOWN"
     confidence_tier: Literal["TIER_1_FILENAME", "TIER_2_PAGE_INSPECTION", "FALLBACK"] = "FALLBACK"

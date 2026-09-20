@@ -27,6 +27,9 @@ def get_total_page_count(pdf_source: str | Path | bytes) -> int:
         doc = pymupdf.open(str(pdf_source))
     else:
         doc = pymupdf.open(stream=pdf_source, filetype="pdf")
+    if doc.is_encrypted and not doc.authenticate(""):
+        doc.close()
+        raise PermissionError(f"PDF is password-protected and cannot be decrypted: {pdf_source}")
     count = len(doc)
     doc.close()
     return count
@@ -49,6 +52,10 @@ def slice_pdf_chunks(
         doc = pymupdf.open(str(pdf_source))
     else:
         doc = pymupdf.open(stream=pdf_source, filetype="pdf")
+
+    if doc.is_encrypted and not doc.authenticate(""):
+        doc.close()
+        raise PermissionError(f"PDF is password-protected and cannot be decrypted: {pdf_source}")
 
     total_pages = len(doc)
 

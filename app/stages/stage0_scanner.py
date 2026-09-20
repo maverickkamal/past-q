@@ -29,12 +29,49 @@ DISCIPLINE_MAP = {
     "bic": "Biochemistry",
 }
 
+COMMON_INSTITUTION_MAP = {
+    "buk": "Bayero University Kano (BUK)",
+    "abu": "Ahmadu Bello University (ABU)",
+    "unilag": "University of Lagos (UNILAG)",
+    "ui": "University of Ibadan (UI)",
+    "oau": "Obafemi Awolowo University (OAU)",
+    "unn": "University of Nigeria, Nsukka (UNN)",
+    "uniben": "University of Benin (UNIBEN)",
+    "unilorin": "University of Ilorin (UNILORIN)",
+    "udus": "Usmanu Danfodiyo University Sokoto (UDUS)",
+    "lasu": "Lagos State University (LASU)",
+    "unical": "University of Calabar (UNICAL)",
+    "uniport": "University of Port Harcourt (UNIPORT)",
+    "futo": "Federal University of Technology Owerri (FUTO)",
+    "futa": "Federal University of Technology Akure (FUTA)",
+    "delsu": "Delta State University (DELSU)",
+    "eksu": "Ekiti State University (EKSU)",
+    "oou": "Olabisi Onabanjo University (OOU)",
+}
+
 EXAM_TYPE_PATTERNS = [
     (r"\b(2nd\s*mbbs|professional|prof\s*exam)\b", "2nd_MBBS_PROFESSIONAL"),
     (r"\b(ca|in-course|in_course|test|continuous\s*assessment)\b", "IN_COURSE_ASSESSMENT"),
     (r"\b(ospe|steeplechase|practical)\b", "PRACTICAL_OSPE"),
     (r"\b(200l|300l|400l)\b", "MBBS_LEVEL_EXAM"),
 ]
+
+
+def is_pdf_password_protected(pdf_path: str | Path) -> bool:
+    """Checks whether a PDF file is encrypted and password-protected."""
+    path = Path(pdf_path)
+    if not path.exists():
+        return False
+    try:
+        doc = pymupdf.open(str(path))
+        if doc.is_encrypted:
+            is_locked = not doc.authenticate("")
+            doc.close()
+            return is_locked
+        doc.close()
+        return False
+    except Exception:
+        return False
 
 
 def extract_filename_tokens(file_path: str | Path) -> dict[str, str]:
@@ -49,6 +86,7 @@ def extract_filename_tokens(file_path: str | Path) -> dict[str, str]:
         "examiner": "UNKNOWN",
         "topic": "UNKNOWN",
         "exam_type": "UNKNOWN",
+        "institution": "UNKNOWN",
     }
 
     # 1. Check Discipline
@@ -56,6 +94,13 @@ def extract_filename_tokens(file_path: str | Path) -> dict[str, str]:
         clean = token.lower()
         if clean in DISCIPLINE_MAP:
             result["discipline"] = DISCIPLINE_MAP[clean]
+            break
+
+    # 1b. Check Institution
+    for token in tokens:
+        clean = token.lower()
+        if clean in COMMON_INSTITUTION_MAP:
+            result["institution"] = COMMON_INSTITUTION_MAP[clean]
             break
 
     # 2. Check Session / Year (e.g. 2021 2022, 2021/2022, or 2022)
@@ -148,6 +193,21 @@ def inspect_page_one_headers(pdf_path: str | Path) -> dict[str, str]:
                 result["paper_title"] = line
                 break
 
+        # Check for Institution
+        for kw, inst in COMMON_INSTITUTION_MAP.items():
+            if re.search(rf"\b{kw}\b", header_text, re.IGNORECASE):
+                result["institution"] = inst
+                break
+
+        if "institution" not in result:
+            univ_match = re.search(
+                r"(?:university\s+of\s+[a-z]+|[a-z]+\s+university(?:\s+[a-z]+)?|college\s+of\s+(?:health|medical)\s+sciences)",
+                header_text,
+                re.IGNORECASE,
+            )
+            if univ_match:
+                result["institution"] = univ_match.group(0).strip().title()
+
         doc.close()
     except Exception:
         pass
@@ -157,6 +217,14 @@ def inspect_page_one_headers(pdf_path: str | Path) -> dict[str, str]:
 
 def run_stage0(pdf_path: str | Path) -> PreScanMetadata:
     """Executes Stage 0 inspection combining Tier 1 and Tier 2."""
+    path = Path(pdf_path)
+    if is_pdf_password_protected(path):
+        return PreScanMetadata(
+            source_file=path.name,
+            confidence_tier="FALLBACK",
+            exam_type="SKIPPED_PASSWORD_PROTECTED",
+        )
+
     tier1 = extract_filename_tokens(pdf_path)
     tier2 = inspect_page_one_headers(pdf_path)
 
@@ -166,6 +234,7 @@ def run_stage0(pdf_path: str | Path) -> PreScanMetadata:
     examiner = tier2.get("examiner") or tier1.get("examiner") or "UNKNOWN"
     topic = tier1.get("topic") or "UNKNOWN"
     exam_type = tier2.get("paper_title") or tier1.get("exam_type") or "UNKNOWN"
+    institution = tier2.get("institution") or tier1.get("institution") or "UNKNOWN"
 
     confidence = "TIER_1_FILENAME"
     if tier2:
@@ -178,6 +247,7 @@ def run_stage0(pdf_path: str | Path) -> PreScanMetadata:
         examiner=examiner,
         topic=topic,
         exam_type=exam_type,
+        institution=institution,
         confidence_tier=confidence,
     )
 
