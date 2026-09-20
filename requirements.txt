@@ -3,3 +3,4 @@ pymupdf
 pillow
 pydantic
 pytest
+typesafe-sdk>=0.7.0

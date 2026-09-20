@@ -71,6 +71,7 @@ async def run_pipeline(
     pdf_path: str | Path,
     exam_type: str = "MBBS_EXAM",
     db_path: str | Path | None = None,
+    auto_recurrence: bool = False,
 ) -> PipelineReport:
     """Executes the full automated 5-stage ingestion pipeline on a past questions PDF.
 
@@ -79,12 +80,14 @@ async def run_pipeline(
         Stage 1: In-Memory PDF Chunking & Gemini Flash Vision Transcription
         Stage 2: Master Assembly & Pointer-Only Manifest Slicing
         Stage 3: Single-Turn Full Exam Paper Structuring with Taxonomy Guidance
-        Stage 4: Deterministic Validation & SQLite Atomic Persistence
+        Stage 4: Deterministic Validation, Verbatim Deduplication & SQLite Atomic Persistence
+        (Optional) Stage 6: Cross-Year Recurrence Matching via TypeSafe Jev
 
     Args:
         pdf_path: Path to the target medical past questions PDF.
         exam_type: General examination classification (e.g. 'MBBS_EXAM', 'CONTINUOUS_ASSESSMENT').
         db_path: Target SQLite database path (defaults to config.DATABASE_PATH).
+        auto_recurrence: If True, automatically runs Jev cross-year recurrence clustering post-ingestion.
 
     Returns:
         PipelineReport summarizing the complete ingestion run.
@@ -108,25 +111,30 @@ async def run_pipeline(
     pre_scan_meta = scan_exam_file(pdf_file)
     print(
         f"  Discipline: {pre_scan_meta.discipline} | Session: {pre_scan_meta.session} | "
-        f"Confidence: {pre_scan_meta.confidence_tier}"
+        f"Examiner: {pre_scan_meta.examiner} | Topic: {pre_scan_meta.topic}"
     )
 
-    # --- STAGE 1: CHUNKER & VISION TRANSCRIBER ---
-    print(f"\n[Stage 1] Chunking and transcribing PDF in memory (chunks of {PAGE_CHUNK_SIZE} pages)...")
-    master_markdown = await run_stage1(pdf_file, chunk_size=PAGE_CHUNK_SIZE)
-    print(f"  Master markdown transcription complete ({len(master_markdown)} chars).")
+    # --- STAGE 1: CHUNKED INGESTION & VISION TRANSCRIBER ---
+    print(f"\n[Stage 1] Transcribing PDF via Gemini Flash (10-page in-memory chunks)...")
+    markdown_chunks = await run_stage1(
+        pdf_path=pdf_file,
+        chunk_size=PAGE_CHUNK_SIZE,
+        agent=transcriber_agent,
+    )
+    print(f"  Completed transcription of {len(markdown_chunks)} chunk(s).")
 
-    # --- STAGE 2: MASTER ASSEMBLY & MANIFEST SLICER ---
-    print(f"\n[Stage 2] Detecting exam boundaries and generating manifest...")
-    manifest = await generate_manifest(master_markdown, agent=manifest_agent)
-    print(f"  Detected {len(manifest.exams)} distinct exam paper(s):")
-    for ex in manifest.exams:
-        print(f"    - [{ex.exam_id}] {ex.paper_title} (Pages {ex.start_page}-{ex.end_page}) [{ex.discipline}, {ex.level}]")
+    # --- STAGE 2: MASTER ASSEMBLY & POINTER-ONLY MANIFEST ---
+    print(f"\n[Stage 2] Assembling master markdown and generating pointer manifest...")
+    master_md = assemble_master_markdown(markdown_chunks)
+    manifest = await generate_manifest(master_md, pre_scan_meta=pre_scan_meta, agent=manifest_agent)
+    print(f"  Identified {len(manifest.exams)} exam paper(s) in booklet:")
+    for ep in manifest.exams:
+        print(f"    - [{ep.exam_id}] {ep.paper_title} (Pages {ep.start_page}-{ep.end_page})")
 
-    sliced_exams = slice_exam_papers(master_markdown, manifest)
+    sliced_exams = slice_exam_papers(master_md, manifest)
 
-    # --- STAGES 3 & 4: STRUCTURING, VALIDATION, AND PERSISTENCE ---
-    print(f"\n[Stages 3 & 4] Structuring, validating, and committing exam papers...")
+    # --- STAGE 3 & 4: FULL EXAM STRUCTURING & DETERMINISTIC VALIDATION ---
+    print(f"\n[Stage 3 & 4] Structuring and validating exam papers...")
     total_questions = 0
     total_approved = 0
     total_review = 0
@@ -136,8 +144,8 @@ async def run_pipeline(
         structured_batch = await structure_exam_paper(isolated_md, pointer, agent=structuring_agent)
         print(f"    Extracted {len(structured_batch.questions)} questions.")
 
-        # Stage 4: Deterministic Validation
-        val_result = validate_batch(structured_batch, exam_pointer=pointer, check_asset_exists=True)
+        # Stage 4: Deterministic Validation & Deduplication
+        val_result = validate_batch(structured_batch, exam_pointer=pointer, check_asset_exists=True, deduplicate_verbatim=True)
         print(f"    Validation: {val_result.approved_count} APPROVED, {val_result.needs_review_count} NEEDS_REVIEW")
 
         # Stage 4: Persistence
@@ -172,6 +180,14 @@ async def run_pipeline(
     print(f"Database Total Questions:{stats['total_questions']}")
     print(f"=======================================================\n")
 
+    if auto_recurrence:
+        print("\n[Auto-Recurrence] Running TypeSafe Jev semantic recurrence clustering...")
+        try:
+            from app.recurrence import run_recurrence_matcher
+            run_recurrence_matcher(db_path=target_db, use_typesafe=True)
+        except Exception as e:
+            print(f"Warning: Auto-recurrence run encountered an error: {e}")
+
     return PipelineReport(
         source_pdf=pdf_file.name,
         pre_scan_metadata=pre_scan_meta,
@@ -190,9 +206,17 @@ def main():
     parser.add_argument("pdf", type=str, help="Path to past questions PDF file")
     parser.add_argument("--exam-type", type=str, default="MBBS_EXAM", help="Default exam type classification")
     parser.add_argument("--db", type=str, default=None, help="Custom SQLite database output path")
+    parser.add_argument("--auto-recurrence", action="store_true", help="Run Jev cross-year recurrence analysis post-ingestion")
 
     args = parser.parse_args()
-    asyncio.run(run_pipeline(pdf_path=args.pdf, exam_type=args.exam_type, db_path=args.db))
+    asyncio.run(
+        run_pipeline(
+            pdf_path=args.pdf,
+            exam_type=args.exam_type,
+            db_path=args.db,
+            auto_recurrence=args.auto_recurrence,
+        )
+    )
 
 
 if __name__ == "__main__":

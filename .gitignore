@@ -7,3 +7,5 @@ tests/
 assets/
 pytest.*
 *.db
+exports/
+skills-lock.json

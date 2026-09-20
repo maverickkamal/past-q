@@ -69,6 +69,23 @@ def save_exam(
         conn.commit()
 
 
+def find_existing_exam_by_metadata(
+    academic_year: str,
+    discipline: str,
+    paper_title: str,
+    db_path: str | Path | None = None,
+) -> dict[str, Any] | None:
+    """Finds an existing exam record by academic_year, discipline, and paper_title to detect re-ingestion."""
+    query = """
+    SELECT id, source_document, academic_year, discipline, level, paper_title, exam_type, examiner
+    FROM exams
+    WHERE academic_year = ? AND discipline = ? AND lower(trim(paper_title)) = lower(trim(?))
+    """
+    with get_connection(db_path) as conn:
+        row = conn.execute(query, (academic_year, discipline, paper_title)).fetchone()
+        return dict(row) if row else None
+
+
 def save_question(
     exam_id: str,
     question: StructuredQuestion,

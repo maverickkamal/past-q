@@ -23,6 +23,7 @@ from typing import Any
 
 from app.config import BASE_DIR, DATABASE_PATH
 from app.database import get_connection, update_recurrence_info
+from app.tools.typesafe_matcher import TypeSafeRecurrenceJudge
 
 
 def normalize_question_text(stem: str, items: list[dict[str, Any]] | None = None) -> str:
@@ -96,15 +97,24 @@ class DisjointSet:
 def run_recurrence_matcher(
     similarity_threshold: float = 0.72,
     db_path: str | Path | None = None,
+    use_typesafe: bool = True,
+    typesafe_threshold: float = 0.80,
 ) -> dict[str, list[dict[str, Any]]]:
-    """Scans all questions in the database, clusters duplicates, and updates recurrence counts."""
+    """Scans all questions in the database, clusters duplicates, and updates recurrence counts.
+
+    Uses a hybrid two-tier approach:
+    1. Lexical fast-path (SequenceMatcher + Jaccard) for obvious duplicates (sim >= threshold).
+    2. Semantic judgment via TypeSafe AI's Jev model for candidate pairs in the semantic
+       band (0.15 <= sim < threshold, or shared topic/system_region), bridging BMAS didactic
+       and CCMAS clinical vignette questions.
+    """
     conn = get_connection(db_path)
     cursor = conn.cursor()
 
     query = """
     SELECT q.id, q.exam_id, q.question_number, q.discipline, q.level, 
-           q.course_code, q.system_region, q.topic, q.category, q.stem_text,
-           q.items_json, e.academic_year, e.paper_title
+           q.course_code, q.system_region, q.topic, q.category, q.curriculum_style,
+           q.stem_text, q.items_json, e.academic_year, e.paper_title
     FROM questions q
     JOIN exams e ON q.exam_id = e.id
     WHERE q.review_status = 'APPROVED'
@@ -113,6 +123,12 @@ def run_recurrence_matcher(
     conn.close()
 
     print(f"Loaded {len(rows)} approved questions from database for recurrence analysis.")
+
+    judge = TypeSafeRecurrenceJudge(probability_threshold=typesafe_threshold) if use_typesafe else None
+    if judge and judge.is_configured:
+        print(f"TypeSafe AI Jev System One engine ACTIVE (model: {judge.model}, threshold: {typesafe_threshold}).")
+    elif use_typesafe:
+        print("TypeSafe AI engine unconfigured (TYPESAFE_API_KEY missing) - running in lexical mode.")
 
     by_discipline: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in rows:
@@ -140,9 +156,26 @@ def run_recurrence_matcher(
                 norm2 = normalize_question_text(q2.get("stem_text", ""), parsed_items2)
 
                 sim = compute_similarity(norm1, norm2)
+                is_match = False
+                match_score = sim
+
                 if sim >= similarity_threshold:
+                    is_match = True
+                elif judge and judge.is_configured:
+                    is_same_topic = bool(
+                        q1.get("topic")
+                        and q1.get("topic") == q2.get("topic")
+                        and q1.get("topic") not in ("General", "Unknown", "None", "")
+                    )
+                    if sim >= 0.25 or is_same_topic:
+                        decision = judge.evaluate_pair(q1, q2)
+                        if decision.is_recurrence:
+                            is_match = True
+                            match_score = decision.probability
+
+                if is_match:
                     uf.union(q1["id"], q2["id"])
-                    match_pairs.append((q1["id"], q2["id"], round(sim, 3)))
+                    match_pairs.append((q1["id"], q2["id"], round(match_score, 3)))
 
     clusters: dict[str, list[dict[str, Any]]] = defaultdict(list)
     question_map = {r["id"]: r for r in rows}
@@ -244,6 +277,9 @@ def main():
     parser.add_argument("--run", action="store_true", help="Run recurrence matching and update database counts")
     parser.add_argument("--report", action="store_true", help="Generate Markdown recurrence report")
     parser.add_argument("--threshold", type=float, default=0.72, help="Similarity threshold ratio (0.0 to 1.0)")
+    parser.add_argument("--use-jev", action="store_true", default=True, help="Enable TypeSafe Jev System One semantic matching")
+    parser.add_argument("--no-jev", action="store_false", dest="use_jev", help="Disable TypeSafe Jev (lexical only)")
+    parser.add_argument("--jev-threshold", type=float, default=0.80, help="Probability threshold for TypeSafe Jev recurrence (0.0 to 1.0)")
     parser.add_argument("--db", type=str, default=None, help="Custom database path")
     parser.add_argument("--output", type=str, default=None, help="Target markdown report path")
 
@@ -254,11 +290,21 @@ def main():
 
     clusters = {}
     if do_run:
-        clusters = run_recurrence_matcher(similarity_threshold=args.threshold, db_path=args.db)
+        clusters = run_recurrence_matcher(
+            similarity_threshold=args.threshold,
+            db_path=args.db,
+            use_typesafe=args.use_jev,
+            typesafe_threshold=args.jev_threshold,
+        )
 
     if do_report:
         if not clusters:
-            clusters = run_recurrence_matcher(similarity_threshold=args.threshold, db_path=args.db)
+            clusters = run_recurrence_matcher(
+                similarity_threshold=args.threshold,
+                db_path=args.db,
+                use_typesafe=args.use_jev,
+                typesafe_threshold=args.jev_threshold,
+            )
         generate_recurrence_report(clusters, output_path=args.output)
 
 

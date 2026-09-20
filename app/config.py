@@ -2,6 +2,9 @@
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,6 +23,10 @@ RENDER_DPI = int(os.getenv("RENDER_DPI", "200"))
 PAGE_CHUNK_SIZE = int(os.getenv("PAGE_CHUNK_SIZE", "10"))
 MAX_OUTPUT_TOKENS = 65536
 
+
+# TypeSafe AI Settings
+TYPESAFE_API_KEY = os.getenv("TYPESAFE_API_KEY")
+TYPESAFE_MODEL = os.getenv("TYPESAFE_MODEL", "jev-latest")
 
 # Ensure assets directory exists
 ASSETS_DIR.mkdir(parents=True, exist_ok=True)

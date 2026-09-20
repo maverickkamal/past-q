@@ -108,9 +108,32 @@ def show_stats() -> None:
     print("=============================================\n")
 
 
+def triage_queue(discipline: str | None = None, exam_id: str | None = None) -> None:
+    """Uses TypeSafe Jev to evaluate and prioritize all questions in the review queue."""
+    from app.tools.typesafe_triage import TypeSafeReviewTriager
+
+    items = get_review_queue(discipline=discipline, exam_id=exam_id)
+    if not items:
+        print("\nAll clear! No questions currently flagged for review.")
+        return
+
+    triager = TypeSafeReviewTriager()
+    mode = f"TypeSafe Jev ({triager.model})" if triager.is_configured else "Deterministic Fallback"
+    print(f"\n=== AUTOMATED REVIEW QUEUE TRIAGE ({len(items)} items, Engine: {mode}) ===")
+    print(f"{'ID':<36} | {'Severity':<16} | {'Action':<22} | {'Summary'}")
+    print("-" * 115)
+
+    for it in items:
+        res = triager.triage_question(it)
+        q_id = it.get("id", "UNKNOWN")
+        print(f"{q_id:<36} | {res.severity_level:<16} | {res.recommended_action:<22} | {res.summary}")
+    print("-" * 115)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Medical Past Questions Review Queue CLI")
     parser.add_argument("--list", action="store_true", help="List all questions flagged for review")
+    parser.add_argument("--triage", action="store_true", help="Run automated TypeSafe Jev triage and severity prioritization")
     parser.add_argument("--show", type=str, metavar="QUESTION_ID", help="Inspect a flagged question in detail")
     parser.add_argument("--approve", type=str, metavar="QUESTION_ID", help="Approve a question and clear flags")
     parser.add_argument("--stats", action="store_true", help="Display overall database and review queue stats")
@@ -119,7 +142,9 @@ def main():
 
     args = parser.parse_args()
 
-    if args.list:
+    if args.triage:
+        triage_queue(discipline=args.discipline, exam_id=args.exam)
+    elif args.list:
         list_review_queue(discipline=args.discipline, exam_id=args.exam)
     elif args.show:
         show_question_detail(args.show)

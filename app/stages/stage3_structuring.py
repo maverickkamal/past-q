@@ -225,18 +225,36 @@ async def structure_exam_paper(
             q.level = pointer.level
 
         # 2. Normalize system_region deterministically
+        effective_disc = q.discipline or pointer.discipline
+        effective_lvl = q.level if q.level != "UNKNOWN" else None
         q.system_region = resolve_system_region(
             q.system_region,
-            discipline=q.discipline or pointer.discipline,
-            level=q.level if q.level != "UNKNOWN" else None,
+            discipline=effective_disc,
+            level=effective_lvl,
         )
+
+        # 2b. Jev System One fallback if still non-canonical
+        canonical_regions = get_canonical_system_regions(discipline=effective_disc, level=effective_lvl)
+        if canonical_regions and q.system_region not in canonical_regions:
+            try:
+                from app.tools.typesafe_taxonomy import TypeSafeTaxonomyNormalizer
+                normalizer = TypeSafeTaxonomyNormalizer()
+                if normalizer.is_configured:
+                    q.system_region = normalizer.normalize_region(
+                        stem_text=q.stem_text,
+                        discipline=effective_disc,
+                        raw_region=q.system_region,
+                        level=effective_lvl,
+                    )
+            except Exception as e:
+                logging.getLogger(__name__).warning(f"Jev taxonomy normalization failed: {e}")
 
         # 3. Resolve course_code if unassigned
         if not q.course_code:
             q.course_code = resolve_course_code(
                 q.system_region,
-                discipline=q.discipline or pointer.discipline,
-                level=q.level if q.level != "UNKNOWN" else None,
+                discipline=effective_disc,
+                level=effective_lvl,
             )
 
     return batch

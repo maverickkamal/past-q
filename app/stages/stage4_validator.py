@@ -14,13 +14,28 @@ compliant questions receive review_status='APPROVED'.
 
 from __future__ import annotations
 
+import hashlib
+import re
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Any, Literal
 
 from app.config import ASSETS_DIR, BASE_DIR
 from app.curriculum import get_canonical_system_regions
 from app.schemas import ExamPointer, QuestionBatch, StructuredQuestion
+
+
+def compute_question_fingerprint(stem_text: str, items: list[Any] | None = None) -> str:
+    """Computes a normalized SHA-256 fingerprint from question stem and items to detect verbatim duplicates."""
+    norm_stem = re.sub(r"\s+", " ", (stem_text or "").lower().strip())
+    content = norm_stem
+    if items:
+        for it in items:
+            text = it.text if hasattr(it, "text") else (it.get("text", "") if isinstance(it, dict) else "")
+            norm_it = re.sub(r"\s+", " ", (text or "").lower().strip())
+            if norm_it:
+                content += " | " + norm_it
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
 class ValidationResult(BaseModel):
@@ -121,6 +136,7 @@ def validate_batch(
     batch: QuestionBatch,
     exam_pointer: ExamPointer | None = None,
     check_asset_exists: bool = True,
+    deduplicate_verbatim: bool = True,
 ) -> BatchValidationResult:
     """Validates an entire batch of structured questions.
 
@@ -128,6 +144,7 @@ def validate_batch(
         batch: QuestionBatch produced by Stage 3.
         exam_pointer: Optional ExamPointer metadata for context and identification.
         check_asset_exists: Whether to verify visual asset file paths on disk.
+        deduplicate_verbatim: Whether to detect and discard verbatim duplicate questions within the batch.
 
     Returns:
         BatchValidationResult summarizing batch statistics, individual question outcomes,
@@ -153,10 +170,20 @@ def validate_batch(
 
     approved_count = 0
     needs_review_count = 0
+    validated_questions: list[StructuredQuestion] = []
+    seen_fingerprints: set[str] = set()
 
     for q in batch.questions:
+        if deduplicate_verbatim:
+            fp = compute_question_fingerprint(q.stem_text, q.items)
+            # Deduplicate if question has meaningful content and was already seen in this exam
+            if fp in seen_fingerprints and len((q.stem_text or "").strip()) >= 5:
+                continue
+            seen_fingerprints.add(fp)
+
         res = validate_question(q, check_asset_exists=check_asset_exists)
         results.append(res)
+        validated_questions.append(q)
         if res.review_status == "APPROVED":
             approved_count += 1
         else:
@@ -164,9 +191,9 @@ def validate_batch(
 
     return BatchValidationResult(
         exam_id=exam_id,
-        total_questions=len(batch.questions),
+        total_questions=len(validated_questions),
         approved_count=approved_count,
         needs_review_count=needs_review_count,
         results=results,
-        questions=batch.questions,
+        questions=validated_questions,
     )
