@@ -19,7 +19,13 @@ from typing import Any
 from google.adk.agents import SequentialAgent
 
 from app.config import DATABASE_PATH, PAGE_CHUNK_SIZE
-from app.database import get_database_stats, init_db, persist_validated_exam
+from app.database import (
+    get_database_stats,
+    get_ingested_source_documents,
+    init_db,
+    is_source_document_ingested,
+    persist_validated_exam,
+)
 from app.schemas import ExamManifest, ExamPointer, PreScanMetadata, QuestionBatch, StructuredQuestion
 from app.stages.stage0_scanner import is_pdf_password_protected, scan_exam_file
 from app.stages.stage1_transcriber import create_stage1_agent, run_stage1
@@ -70,6 +76,7 @@ async def run_pipeline(
     exam_type: str = "MBBS_EXAM",
     db_path: str | Path | None = None,
     auto_recurrence: bool = False,
+    force: bool = False,
 ) -> PipelineReport:
     """Executes the full automated 5-stage ingestion pipeline on a past questions PDF.
 
@@ -86,6 +93,7 @@ async def run_pipeline(
         exam_type: General examination classification (e.g. 'MBBS_EXAM', 'CONTINUOUS_ASSESSMENT').
         db_path: Target SQLite database path (defaults to config.DATABASE_PATH).
         auto_recurrence: If True, automatically runs Jev cross-year recurrence clustering post-ingestion.
+        force: If True, re-ingests the PDF even if already recorded in SQLite.
 
     Returns:
         PipelineReport summarizing the complete ingestion run.
@@ -98,7 +106,27 @@ async def run_pipeline(
     target_db = str(db_path or DATABASE_PATH)
     init_db(target_db)
 
-    # Password-protected / encrypted PDF check guard
+    # 1. Skip if booklet is already ingested in database (unless force=True)
+    if not force and is_source_document_ingested(pdf_file.name, db_path=target_db):
+        print(
+            f"\n[SKIP] Booklet '{pdf_file.name}' is already recorded in the database. "
+            f"Skipping to save quota (pass --force to re-ingest).\n",
+            flush=True,
+        )
+        return PipelineReport(
+            source_pdf=pdf_file.name,
+            pre_scan_metadata=PreScanMetadata(source_file=pdf_file.name),
+            manifest=ExamManifest(exams=[]),
+            total_exams=0,
+            total_questions=0,
+            approved_questions=0,
+            needs_review_questions=0,
+            duration_seconds=round(time.time() - start_time, 2),
+            persisted_db=target_db,
+            status="SKIPPED_ALREADY_INGESTED",
+        )
+
+    # 2. Password-protected / encrypted PDF check guard
     if is_pdf_password_protected(pdf_file):
         print(f"\n[WARNING] PDF '{pdf_file.name}' is password-protected or encrypted. Skipping ingestion gracefully.\n")
         return PipelineReport(
@@ -109,7 +137,7 @@ async def run_pipeline(
             total_questions=0,
             approved_questions=0,
             needs_review_questions=0,
-            duration_seconds=time.time() - start_time,
+            duration_seconds=round(time.time() - start_time, 2),
             persisted_db=target_db,
             status="SKIPPED_PASSWORD_PROTECTED",
         )
@@ -138,6 +166,7 @@ async def run_pipeline(
     print(f"  Completed transcription ({len(master_md)} characters).")
 
     # --- STAGE 2: MASTER ASSEMBLY & POINTER-ONLY MANIFEST ---
+    await asyncio.sleep(2)
     print(f"\n[Stage 2] Generating pointer manifest...")
     manifest = await generate_manifest(master_md, pre_scan_meta=pre_scan_meta, agent=manifest_agent)
     print(f"  Identified {len(manifest.exams)} exam paper(s) in booklet:")
@@ -153,6 +182,7 @@ async def run_pipeline(
     total_review = 0
 
     for pointer, isolated_md in sliced_exams.values():
+        await asyncio.sleep(2)
         print(f"\n  Structuring [{pointer.exam_id}] ({pointer.discipline}, {pointer.level})...")
         structured_batch = await structure_exam_paper(isolated_md, pointer, agent=structuring_agent)
         print(f"    Extracted {len(structured_batch.questions)} questions.")
@@ -219,15 +249,29 @@ async def run_batch_or_single(
     exam_type: str = "MBBS_EXAM",
     db_path: str | Path | None = None,
     auto_recurrence: bool = False,
+    delay_seconds: int = 60,
+    force: bool = False,
 ) -> list[PipelineReport]:
-    """Ingests a single PDF file or all PDFs within a target directory."""
+    """Ingests a single PDF file or all PDFs within a target directory with rate-limit delays."""
     path = Path(target_path)
     if not path.exists():
         raise FileNotFoundError(f"Source path not found: {path}")
 
+    target_db = str(db_path or DATABASE_PATH)
+    init_db(target_db)
+    ingested_set = get_ingested_source_documents(target_db) if not force else set()
+
     if path.is_dir():
-        pdf_files = sorted([p for p in path.rglob("*.pdf") if not p.name.startswith("._")])
-        print(f"\nDiscovered {len(pdf_files)} PDF file(s) in '{path.name}' to ingest.\n", flush=True)
+        all_pdf_files = sorted([p for p in path.rglob("*.pdf") if not p.name.startswith("._")])
+        pending_count = sum(1 for p in all_pdf_files if p.name.lower().strip() not in ingested_set)
+        already_count = len(all_pdf_files) - pending_count
+        print(f"\n=======================================================", flush=True)
+        print(f"DISCOVERED {len(all_pdf_files)} PDF FILE(S) IN DIRECTORY: '{path.name}'", flush=True)
+        print(f"  Already Ingested: {already_count} booklet(s) (will be skipped)", flush=True)
+        print(f"  Pending Ingestion: {pending_count} booklet(s)", flush=True)
+        print(f"  Queue Cooldown:    {delay_seconds}s (1 min) after actively processed booklets", flush=True)
+        print(f"=======================================================\n", flush=True)
+        pdf_files = all_pdf_files
     else:
         pdf_files = [path]
 
@@ -235,16 +279,35 @@ async def run_batch_or_single(
     for i, pdf_file in enumerate(pdf_files, 1):
         if len(pdf_files) > 1:
             print(f"\n=======================================================", flush=True)
-            print(f"[{i}/{len(pdf_files)}] PROCESSING: {pdf_file.name}", flush=True)
+            print(f"[{i}/{len(pdf_files)}] QUEUE PROCESSING: {pdf_file.name}", flush=True)
             print(f"=======================================================\n", flush=True)
 
-        report = await run_pipeline(
-            pdf_path=pdf_file,
-            exam_type=exam_type,
-            db_path=db_path,
-            auto_recurrence=False,
-        )
-        reports.append(report)
+        try:
+            report = await run_pipeline(
+                pdf_path=pdf_file,
+                exam_type=exam_type,
+                db_path=db_path,
+                auto_recurrence=False,
+                force=force,
+            )
+            reports.append(report)
+
+            # Only pause for cooldown if the booklet was actively processed (not skipped)
+            was_processed = getattr(report, "status", None) == "COMPLETED"
+            if was_processed and len(pdf_files) > 1 and i < len(pdf_files) and delay_seconds > 0:
+                # Check if any remaining files need processing
+                remaining_pending = any(
+                    p.name.lower().strip() not in ingested_set or force
+                    for p in pdf_files[i:]
+                )
+                if remaining_pending:
+                    print(
+                        f"\n[Queue Cooldown] Pausing for {delay_seconds}s (1 min) before processing next booklet...",
+                        flush=True,
+                    )
+                    await asyncio.sleep(delay_seconds)
+        except Exception as e:
+            print(f"\n[ERROR] Failed ingesting '{pdf_file.name}': {e}. Continuing queue...\n", flush=True)
 
     if auto_recurrence and any(r.total_questions > 0 for r in reports):
         print("\n[Auto-Recurrence] Running TypeSafe Jev semantic recurrence clustering across all ingested exams...", flush=True)
@@ -262,7 +325,9 @@ def main():
     parser.add_argument("path", type=str, help="Path to past questions PDF file or directory of PDFs")
     parser.add_argument("--exam-type", type=str, default="MBBS_EXAM", help="Default exam type classification")
     parser.add_argument("--db", type=str, default=None, help="Custom SQLite database output path")
+    parser.add_argument("--delay", type=int, default=60, help="Delay in seconds between queued PDFs (default: 60s)")
     parser.add_argument("--auto-recurrence", action="store_true", help="Run Jev cross-year recurrence analysis post-ingestion")
+    parser.add_argument("--force", action="store_true", help="Force re-ingestion of PDF even if already present in database")
 
     args = parser.parse_args()
     asyncio.run(
@@ -271,6 +336,8 @@ def main():
             exam_type=args.exam_type,
             db_path=args.db,
             auto_recurrence=args.auto_recurrence,
+            delay_seconds=args.delay,
+            force=args.force,
         )
     )
 

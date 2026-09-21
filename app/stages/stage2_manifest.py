@@ -6,8 +6,7 @@ exam boundaries (emitting integer page pointers only), and deterministically sli
 the master document into isolated exam paper strings in Python.
 """
 
-from __future__ import annotations
-
+import asyncio
 import os
 import re
 from dotenv import load_dotenv
@@ -17,6 +16,7 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
 from app.schemas import ExamManifest, ExamPointer, PreScanMetadata
+from app.tools.retry_handler import calculate_backoff, is_resource_exhausted_error
 
 load_dotenv()
 
@@ -49,12 +49,17 @@ Your responsibility:
 
 
 def create_stage2_agent(model_name: str | None = None) -> Agent:
-    """Initializes the Stage 2 manifest generator agent with structured schema."""
+    """Initializes the Stage 2 manifest generator agent with structured schema and HTTP retry options."""
     return Agent(
         name="stage2_manifest_generator",
         model=model_name or STAGE2_MODEL,
         output_schema=ExamManifest,
         instruction=STAGE2_SYSTEM_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(
+            http_options=types.HttpOptions(
+                retry_options=types.HttpRetryOptions(initial_delay=2.0, attempts=3),
+            )
+        ),
     )
 
 
@@ -198,20 +203,43 @@ async def generate_manifest(
         parts=[types.Part.from_text(text=prompt)],
     )
 
-    collected_json_text: list[str] = []
-    async for event in runner.run_async(
-        user_id=user_id,
-        session_id=session_id,
-        new_message=user_message,
-    ):
-        if event.content and event.content.role == "model":
-            for part in event.content.parts:
-                if part.text:
-                    collected_json_text.append(part.text)
+    max_retries = 5
+    raw_json = ""
+    for attempt in range(1, max_retries + 1):
+        try:
+            session_id = f"stage2_manifest_session_{attempt}"
+            await session_service.create_session(
+                app_name=app_name,
+                user_id=user_id,
+                session_id=session_id,
+            )
 
-    raw_json = "".join(collected_json_text).strip()
-    if not raw_json:
-        raise RuntimeError("Stage 2 agent returned an empty response.")
+            collected_json_text: list[str] = []
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=user_message,
+            ):
+                if event.content and event.content.role == "model":
+                    for part in event.content.parts:
+                        if part.text:
+                            collected_json_text.append(part.text)
+
+            raw_json = "".join(collected_json_text).strip()
+            if not raw_json:
+                raise RuntimeError("Stage 2 agent returned an empty response.")
+            break
+        except Exception as exc:
+            if is_resource_exhausted_error(exc) and attempt < max_retries:
+                backoff = calculate_backoff(attempt=attempt, base=12.0)
+                print(
+                    f"\n  [429 Resource Exhausted] Temporary capacity contention on Vertex AI during Stage 2 manifest generation. "
+                    f"Retrying in {int(backoff)}s (attempt {attempt}/{max_retries})...",
+                    flush=True,
+                )
+                await asyncio.sleep(backoff)
+            else:
+                raise
 
     manifest = ExamManifest.model_validate_json(raw_json)
     if pre_scan_meta:

@@ -7,6 +7,7 @@ in a single API call leveraging Gemini Flash's 65,536 output token capacity.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import re
@@ -23,6 +24,7 @@ from app.curriculum import (
     resolve_system_region,
 )
 from app.schemas import ExamPointer, QuestionBatch, StructuredQuestion
+from app.tools.retry_handler import calculate_backoff, is_resource_exhausted_error
 
 logging.getLogger("google_genai.models").setLevel(logging.ERROR)
 
@@ -108,12 +110,17 @@ In our preclinical database architecture, all in-course assessment items belong 
 
 
 def create_stage3_agent(model_name: str | None = None) -> Agent:
-    """Initializes the Stage 3 structuring agent with strict Pydantic output schema."""
+    """Initializes the Stage 3 structuring agent with strict Pydantic output schema and HTTP retry options."""
     return Agent(
         name="stage3_structuring_agent",
         model=model_name or STAGE3_MODEL,
         output_schema=QuestionBatch,
         instruction=STAGE3_SYSTEM_INSTRUCTION,
+        generate_content_config=types.GenerateContentConfig(
+            http_options=types.HttpOptions(
+                retry_options=types.HttpRetryOptions(initial_delay=2.0, attempts=3),
+            )
+        ),
     )
 
 
@@ -191,29 +198,52 @@ async def structure_exam_paper(
         parts=[types.Part.from_text(text=prompt)],
     )
 
-    collected_json_text: list[str] = []
-    async for event in runner.run_async(
-        user_id=user_id,
-        session_id=session_id,
-        new_message=user_message,
-    ):
-        # Method B Safety Check: 3-line truncation assertion
-        finish_reason = getattr(event, "finish_reason", None)
-        if finish_reason and str(finish_reason).endswith("MAX_TOKENS"):
-            raise RuntimeError(
-                f"Unbelievable: 65,536 token ceiling breached on exam {pointer.exam_id}!"
+    max_retries = 5
+    raw_json = ""
+    for attempt in range(1, max_retries + 1):
+        try:
+            session_id = f"stage3_structuring_{pointer.exam_id}_{attempt}"
+            await session_service.create_session(
+                app_name=app_name,
+                user_id=user_id,
+                session_id=session_id,
             )
 
-        if event.content and event.content.role == "model":
-            for part in event.content.parts:
-                if part.text:
-                    collected_json_text.append(part.text)
+            collected_json_text: list[str] = []
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=user_message,
+            ):
+                # Method B Safety Check: 3-line truncation assertion
+                finish_reason = getattr(event, "finish_reason", None)
+                if finish_reason and str(finish_reason).endswith("MAX_TOKENS"):
+                    raise RuntimeError(
+                        f"Unbelievable: 65,536 token ceiling breached on exam {pointer.exam_id}!"
+                    )
 
-    raw_json = "".join(collected_json_text).strip()
-    if not raw_json:
-        raise RuntimeError(
-            f"Stage 3 structuring agent returned an empty response for exam {pointer.exam_id}."
-        )
+                if event.content and event.content.role == "model":
+                    for part in event.content.parts:
+                        if part.text:
+                            collected_json_text.append(part.text)
+
+            raw_json = "".join(collected_json_text).strip()
+            if not raw_json:
+                raise RuntimeError(
+                    f"Stage 3 structuring agent returned an empty response for exam {pointer.exam_id}."
+                )
+            break
+        except Exception as exc:
+            if is_resource_exhausted_error(exc) and attempt < max_retries:
+                backoff = calculate_backoff(attempt=attempt, base=12.0)
+                print(
+                    f"\n  [429 Resource Exhausted] Temporary capacity contention on Vertex AI during Stage 3 structuring ({pointer.exam_id}). "
+                    f"Retrying in {int(backoff)}s (attempt {attempt}/{max_retries})...",
+                    flush=True,
+                )
+                await asyncio.sleep(backoff)
+            else:
+                raise
 
     if raw_json.startswith("```json"):
         raw_json = raw_json.removeprefix("```json").removesuffix("```").strip()

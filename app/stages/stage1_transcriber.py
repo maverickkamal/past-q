@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 from pathlib import Path
 from typing import Generator
@@ -16,6 +17,7 @@ from google.genai import types
 from app.config import PAGE_CHUNK_SIZE
 from app.stages.stage1_chunker import PDFChunk, slice_pdf_chunks
 from app.tools.diagram_tool import crop_diagram_tool
+from app.tools.retry_handler import calculate_backoff, is_resource_exhausted_error
 
 
 load_dotenv()
@@ -55,12 +57,17 @@ marks allocations ('[5 marks]'), and MCQ options ('A' through 'E').
 
 
 def create_stage1_agent(model_name: str | None = None) -> Agent:
-    """Initializes the Stage 1 Gemini transcriber agent with diagram crop tool."""
+    """Initializes the Stage 1 Gemini transcriber agent with diagram crop tool and HTTP retry options."""
     return Agent(
         name="stage1_transcriber",
         model=model_name or STAGE1_MODEL,
         instruction=STAGE1_SYSTEM_INSTRUCTION,
         tools=[crop_diagram_tool],
+        generate_content_config=types.GenerateContentConfig(
+            http_options=types.HttpOptions(
+                retry_options=types.HttpRetryOptions(initial_delay=2.0, attempts=3),
+            )
+        ),
     )
 
 
@@ -120,28 +127,42 @@ async def transcribe_chunk(
         ],
     )
 
-    collected_content: list[str] = []
-    async for event in runner.run_async(
-        user_id=user_id,
-        session_id=session_id,
-        new_message=user_message,
-    ):
-        if not event.content:
-            continue
+    max_retries = 5
+    for attempt in range(1, max_retries + 1):
+        try:
+            collected_content: list[str] = []
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=user_message,
+            ):
+                if not event.content:
+                    continue
 
-        if event.content.role == "model":
-            for part in event.content.parts:
-                if part.text:
-                    collected_content.append(part.text)
-        elif event.content.role == "user":
-            for part in event.content.parts:
-                if part.function_response and part.function_response.response:
-                    res = part.function_response.response
-                    img_md = res.get("result") if isinstance(res, dict) else str(res)
-                    if img_md and img_md not in "".join(collected_content):
-                        collected_content.append(f"\n\n{img_md}\n\n")
+                if event.content.role == "model":
+                    for part in event.content.parts:
+                        if part.text:
+                            collected_content.append(part.text)
+                elif event.content.role == "user":
+                    for part in event.content.parts:
+                        if part.function_response and part.function_response.response:
+                            res = part.function_response.response
+                            img_md = res.get("result") if isinstance(res, dict) else str(res)
+                            if img_md and img_md not in "".join(collected_content):
+                                collected_content.append(f"\n\n{img_md}\n\n")
 
-    return "".join(collected_content).strip()
+            return "".join(collected_content).strip()
+        except Exception as exc:
+            if is_resource_exhausted_error(exc) and attempt < max_retries:
+                backoff = calculate_backoff(attempt=attempt, base=12.0)
+                print(
+                    f"\n  [429 Resource Exhausted] Temporary capacity contention on Vertex AI. "
+                    f"Retrying Chunk {chunk.chunk_index + 1} in {int(backoff)}s (attempt {attempt}/{max_retries})...",
+                    flush=True,
+                )
+                await asyncio.sleep(backoff)
+            else:
+                raise
 
 
 
@@ -198,5 +219,6 @@ async def run_stage1(
         if transcription:
             assembled_markdown.append(transcription)
             print(f"    -> Chunk {chunk.chunk_index + 1} completed ({len(transcription)} chars).", flush=True)
+            await asyncio.sleep(2)
 
     return "\n\n".join(assembled_markdown)

@@ -21,6 +21,7 @@ from google.genai import types
 
 from app.config import DATABASE_PATH
 from app.database import get_connection
+from app.tools.retry_handler import calculate_backoff, is_resource_exhausted_error
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -115,7 +116,7 @@ def normalize_institutions_with_gemini(
     raw_institutions: list[str],
     model_name: str = DEFAULT_NORMALIZER_MODEL,
 ) -> dict[str, str]:
-    """Invokes Gemini Flash Lite to cluster and canonicalize institution names."""
+    """Invokes Gemini Flash Lite to cluster and canonicalize institution names with 429 retry handling."""
     if not raw_institutions:
         return {}
 
@@ -124,21 +125,38 @@ def normalize_institutions_with_gemini(
 
     prompt = f"Here is the list of raw institution strings to normalize:\n{json.dumps(raw_institutions, indent=2)}"
 
-    response = client.models.generate_content(
-        model=model_name,
-        contents=[
-            types.Content(
-                role="user",
-                parts=[types.Part.from_text(text=f"{SYSTEM_PROMPT}\n\n{prompt}")],
+    max_retries = 5
+    text = ""
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=[
+                    types.Content(
+                        role="user",
+                        parts=[types.Part.from_text(text=f"{SYSTEM_PROMPT}\n\n{prompt}")],
+                    )
+                ],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.0,
+                ),
             )
-        ],
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            temperature=0.0,
-        ),
-    )
+            text = (response.text or "").strip()
+            break
+        except Exception as exc:
+            if is_resource_exhausted_error(exc) and attempt < max_retries:
+                import time
+                backoff = calculate_backoff(attempt=attempt, base=12.0)
+                print(
+                    f"\n  [429 Resource Exhausted] Temporary capacity contention on Vertex AI during institution normalization. "
+                    f"Retrying in {int(backoff)}s (attempt {attempt}/{max_retries})...",
+                    flush=True,
+                )
+                time.sleep(backoff)
+            else:
+                raise
 
-    text = (response.text or "").strip()
     if text.startswith("```json"):
         text = text.removeprefix("```json").removesuffix("```").strip()
     elif text.startswith("```"):

@@ -107,6 +107,27 @@ def find_existing_exam_by_metadata(
         return dict(row) if row else None
 
 
+def is_source_document_ingested(
+    source_document: str,
+    db_path: str | Path | None = None,
+) -> bool:
+    """Checks if any exam has already been recorded from this source document."""
+    query = "SELECT 1 FROM exams WHERE lower(trim(source_document)) = lower(trim(?)) LIMIT 1;"
+    with get_connection(db_path) as conn:
+        row = conn.execute(query, (source_document,)).fetchone()
+        return row is not None
+
+
+def get_ingested_source_documents(
+    db_path: str | Path | None = None,
+) -> set[str]:
+    """Returns a set of all lowercased source_document filenames already present in the database."""
+    query = "SELECT DISTINCT source_document FROM exams;"
+    with get_connection(db_path) as conn:
+        rows = conn.execute(query).fetchall()
+        return {r["source_document"].lower().strip() for r in rows if r["source_document"]}
+
+
 def save_question(
     exam_id: str,
     question: StructuredQuestion,
