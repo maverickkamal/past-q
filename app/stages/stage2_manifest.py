@@ -16,7 +16,7 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
 from app.schemas import ExamManifest, ExamPointer, PreScanMetadata
-from app.tools.retry_handler import calculate_backoff, is_resource_exhausted_error
+from app.tools.retry_handler import calculate_backoff, get_retry_reason, is_resource_exhausted_error
 
 load_dotenv()
 
@@ -232,8 +232,9 @@ async def generate_manifest(
         except Exception as exc:
             if is_resource_exhausted_error(exc) and attempt < max_retries:
                 backoff = calculate_backoff(attempt=attempt, base=12.0)
+                reason = get_retry_reason(exc)
                 print(
-                    f"\n  [429 Resource Exhausted] Temporary capacity contention on Vertex AI during Stage 2 manifest generation. "
+                    f"\n  {reason} during Stage 2 manifest generation. "
                     f"Retrying in {int(backoff)}s (attempt {attempt}/{max_retries})...",
                     flush=True,
                 )

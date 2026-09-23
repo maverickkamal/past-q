@@ -17,7 +17,7 @@ from google.genai import types
 from app.config import PAGE_CHUNK_SIZE
 from app.stages.stage1_chunker import PDFChunk, slice_pdf_chunks
 from app.tools.diagram_tool import crop_diagram_tool
-from app.tools.retry_handler import calculate_backoff, is_resource_exhausted_error
+from app.tools.retry_handler import calculate_backoff, get_retry_reason, is_resource_exhausted_error
 
 
 load_dotenv()
@@ -155,8 +155,9 @@ async def transcribe_chunk(
         except Exception as exc:
             if is_resource_exhausted_error(exc) and attempt < max_retries:
                 backoff = calculate_backoff(attempt=attempt, base=12.0)
+                reason = get_retry_reason(exc)
                 print(
-                    f"\n  [429 Resource Exhausted] Temporary capacity contention on Vertex AI. "
+                    f"\n  {reason}. "
                     f"Retrying Chunk {chunk.chunk_index + 1} in {int(backoff)}s (attempt {attempt}/{max_retries})...",
                     flush=True,
                 )
@@ -169,7 +170,7 @@ async def transcribe_chunk(
 async def run_stage1(
     pdf_source: str | Path | bytes | None = None,
     max_chunks: int | None = None,
-    chunk_size: int = PAGE_CHUNK_SIZE,
+    chunk_size: int | None = None,
     agent: Agent | None = None,
     app_name: str = "medical_exam_pipeline",
     pdf_path: str | Path | bytes | None = None,

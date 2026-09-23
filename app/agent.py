@@ -157,10 +157,10 @@ async def run_pipeline(
     )
 
     # --- STAGE 1: CHUNKED INGESTION & VISION TRANSCRIBER ---
-    print(f"\n[Stage 1] Transcribing PDF via Gemini Flash ({PAGE_CHUNK_SIZE}-page in-memory chunks)...")
+    print(f"\n[Stage 1] Transcribing PDF via Gemini Flash (adaptive in-memory chunking)...")
     master_md = await run_stage1(
         pdf_source=pdf_file,
-        chunk_size=PAGE_CHUNK_SIZE,
+        chunk_size=None,
         agent=transcriber_agent,
     )
     print(f"  Completed transcription ({len(master_md)} characters).")

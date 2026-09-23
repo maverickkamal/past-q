@@ -21,7 +21,7 @@ from google.genai import types
 
 from app.config import DATABASE_PATH
 from app.database import get_connection
-from app.tools.retry_handler import calculate_backoff, is_resource_exhausted_error
+from app.tools.retry_handler import calculate_backoff, get_retry_reason, is_resource_exhausted_error
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -148,8 +148,9 @@ def normalize_institutions_with_gemini(
             if is_resource_exhausted_error(exc) and attempt < max_retries:
                 import time
                 backoff = calculate_backoff(attempt=attempt, base=12.0)
+                reason = get_retry_reason(exc)
                 print(
-                    f"\n  [429 Resource Exhausted] Temporary capacity contention on Vertex AI during institution normalization. "
+                    f"\n  {reason} during institution normalization. "
                     f"Retrying in {int(backoff)}s (attempt {attempt}/{max_retries})...",
                     flush=True,
                 )

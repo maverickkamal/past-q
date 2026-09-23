@@ -24,7 +24,7 @@ from app.curriculum import (
     resolve_system_region,
 )
 from app.schemas import ExamPointer, QuestionBatch, StructuredQuestion
-from app.tools.retry_handler import calculate_backoff, is_resource_exhausted_error
+from app.tools.retry_handler import calculate_backoff, get_retry_reason, is_resource_exhausted_error
 
 logging.getLogger("google_genai.models").setLevel(logging.ERROR)
 
@@ -236,8 +236,9 @@ async def structure_exam_paper(
         except Exception as exc:
             if is_resource_exhausted_error(exc) and attempt < max_retries:
                 backoff = calculate_backoff(attempt=attempt, base=12.0)
+                reason = get_retry_reason(exc)
                 print(
-                    f"\n  [429 Resource Exhausted] Temporary capacity contention on Vertex AI during Stage 3 structuring ({pointer.exam_id}). "
+                    f"\n  {reason} during Stage 3 structuring ({pointer.exam_id}). "
                     f"Retrying in {int(backoff)}s (attempt {attempt}/{max_retries})...",
                     flush=True,
                 )

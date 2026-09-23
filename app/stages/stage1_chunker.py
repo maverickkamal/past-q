@@ -35,15 +35,31 @@ def get_total_page_count(pdf_source: str | Path | bytes) -> int:
     return count
 
 
+def get_optimal_chunk_size(
+    total_pages: int,
+    max_single_chunk_pages: int = 25,
+    large_booklet_chunk_size: int = 20,
+) -> int:
+    """Calculates optimal chunk size balancing API call efficiency, memory, and LLM attention.
+
+    - Booklets with <= 25 pages are processed in a single chunk (1 API call).
+    - Massive compilations (> 25 pages, up to 400+ pages) are split into 20-page chunks
+      (preserving visual fidelity and LLM attention without memory spikes).
+    """
+    if total_pages <= max_single_chunk_pages:
+        return total_pages
+    return large_booklet_chunk_size
+
+
 def slice_pdf_chunks(
     pdf_source: str | Path | bytes,
-    chunk_size: int = PAGE_CHUNK_SIZE,
+    chunk_size: int | None = None,
 ) -> Generator[PDFChunk, None, None]:
     """Slices a source PDF into sequential in-memory PDF byte chunks.
 
     Args:
         pdf_source: File path, Path object, or raw PDF bytes.
-        chunk_size: Number of consecutive pages per chunk (default: 5).
+        chunk_size: Number of consecutive pages per chunk. If None, computes adaptive size.
 
     Yields:
         PDFChunk instances containing standalone PDF bytes.
@@ -58,11 +74,12 @@ def slice_pdf_chunks(
         raise PermissionError(f"PDF is password-protected and cannot be decrypted: {pdf_source}")
 
     total_pages = len(doc)
+    effective_chunk_size = chunk_size if chunk_size is not None else get_optimal_chunk_size(total_pages)
 
     try:
         chunk_idx = 0
-        for start_idx in range(0, total_pages, chunk_size):
-            end_idx = min(start_idx + chunk_size, total_pages)
+        for start_idx in range(0, total_pages, effective_chunk_size):
+            end_idx = min(start_idx + effective_chunk_size, total_pages)
             chunk_doc = pymupdf.open()
             chunk_doc.insert_pdf(doc, from_page=start_idx, to_page=end_idx - 1)
             chunk_bytes = chunk_doc.tobytes()
