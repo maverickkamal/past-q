@@ -37,6 +37,7 @@ from app.stages.stage2_manifest import (
 )
 from app.stages.stage3_structuring import create_stage3_agent, structure_exam_paper
 from app.stages.stage4_validator import BatchValidationResult, validate_batch
+from app.tools.retry_handler import get_retry_reason
 
 logging.getLogger("google_genai.models").setLevel(logging.ERROR)
 
@@ -306,8 +307,12 @@ async def run_batch_or_single(
                         flush=True,
                     )
                     await asyncio.sleep(delay_seconds)
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            print("\n[Stopped] Batch queue interrupted by user. Exiting...", flush=True)
+            break
         except Exception as e:
-            print(f"\n[ERROR] Failed ingesting '{pdf_file.name}': {e}. Continuing queue...\n", flush=True)
+            reason = get_retry_reason(e)
+            print(f"\n[ERROR] Failed ingesting '{pdf_file.name}': {reason}. Continuing queue...\n", flush=True)
 
     if auto_recurrence and any(r.total_questions > 0 for r in reports):
         print("\n[Auto-Recurrence] Running TypeSafe Jev semantic recurrence clustering across all ingested exams...", flush=True)
@@ -330,16 +335,19 @@ def main():
     parser.add_argument("--force", action="store_true", help="Force re-ingestion of PDF even if already present in database")
 
     args = parser.parse_args()
-    asyncio.run(
-        run_batch_or_single(
-            target_path=args.path,
-            exam_type=args.exam_type,
-            db_path=args.db,
-            auto_recurrence=args.auto_recurrence,
-            delay_seconds=args.delay,
-            force=args.force,
+    try:
+        asyncio.run(
+            run_batch_or_single(
+                target_path=args.path,
+                exam_type=args.exam_type,
+                db_path=args.db,
+                auto_recurrence=args.auto_recurrence,
+                delay_seconds=args.delay,
+                force=args.force,
+            )
         )
-    )
+    except KeyboardInterrupt:
+        print("\n[Stopped] Ingestion cancelled by user.\n", flush=True)
 
 
 if __name__ == "__main__":

@@ -65,7 +65,12 @@ def is_transient_error(exc: Exception) -> bool:
     if any(kw in err_str for kw in ssl_keywords):
         return True
 
+    if "402" in err_str or "PREPAYMENT CREDITS" in err_str:
+        return False
+
     code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+    if code == 402:
+        return False
     if code in (429, 502, 503, 504):
         return True
 
@@ -78,15 +83,19 @@ is_resource_exhausted_error = is_transient_error
 def get_retry_reason(exc: Exception) -> str:
     """Returns a concise, human-readable summary of the transient failure."""
     err_str = str(exc).upper()
+    if "402" in err_str or "PREPAYMENT CREDITS" in err_str:
+        return "[402 Credits Depleted] Google AI Studio prepayment credits depleted. Manage billing at https://ai.studio/projects"
+    if "404" in err_str or "NOT_FOUND" in err_str:
+        return "[404 Not Found] The specified Gemini model is not found or not available to this API key"
     if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "RESOURCE EXHAUSTED" in err_str:
-        return "[429 Resource Exhausted] Temporary capacity contention on Vertex AI"
-    if any(k in err_str for k in ["EOF", "SSL", "TRANSPORTERROR", "CONNECTION", "DISCONNECTED", "SOCKET"]):
-        return "[Network/SSL Drop] Transient connection error to Google APIs (socket/SSL drop)"
+        return "[429 Resource Exhausted] Temporary capacity contention on Google APIs"
+    if any(k in err_str for k in ["EOF", "SSL", "TRANSPORTERROR", "CONNECTION", "DISCONNECTED", "SOCKET", "GETADDRINFO"]):
+        return "[Network/SSL Drop] Transient connection error to Google APIs (socket/DNS drop)"
     if "503" in err_str or "UNAVAILABLE" in err_str:
         return "[503 Service Unavailable] Google API service temporarily overloaded"
     if "504" in err_str or "DEADLINE_EXCEEDED" in err_str or "TIMED OUT" in err_str:
         return "[Gateway Timeout] Request deadline exceeded"
-    return f"[Transient Error] Temporary failure ({type(exc).__name__})"
+    return f"[API Error] Temporary failure ({type(exc).__name__})"
 
 
 def calculate_backoff(attempt: int, base: float = 10.0, max_delay: float = 120.0) -> float:
