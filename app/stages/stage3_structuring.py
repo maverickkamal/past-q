@@ -23,21 +23,36 @@ from app.curriculum import (
     resolve_course_code,
     resolve_system_region,
 )
-from app.schemas import ExamPointer, QuestionBatch, StructuredQuestion
-from app.tools.retry_handler import calculate_backoff, get_retry_reason, is_resource_exhausted_error
-
-logging.getLogger("google_genai.models").setLevel(logging.ERROR)
+from app.schemas import (
+    ExamPointer,
+    ExamQuestionBatch,
+    MultiExamBatch,
+    QuestionBatch,
+    StructuredQuestion,
+)
+from app.tools.retry_handler import (
+    calculate_backoff,
+    configure_clean_logging,
+    get_retry_reason,
+    is_resource_exhausted_error,
+)
 
 load_dotenv()
+configure_clean_logging()
 
 STAGE3_MODEL = os.getenv("STAGE3_MODEL", "gemini-3.8-flash")
 
 STAGE3_SYSTEM_INSTRUCTION = """\
 You are an expert preclinical medical examination structuring agent.
-You will receive an isolated examination paper transcribed in Markdown along with its metadata (discipline, session, title, examiner, level).
-You will also receive a CANONICAL CURRICULUM TAXONOMY specifying the exact courses, system regions, and topics for this discipline.
+You will receive one or more examination papers transcribed in Markdown along with their metadata (discipline, session, title, examiner, level, exam_id).
+You will also receive a CANONICAL CURRICULUM TAXONOMY specifying the exact courses, system regions, and topics for the relevant discipline(s).
 
-Your task is to transform this raw examination text into a strictly structured `QuestionBatch` containing every question in the paper.
+Your task is to transform this raw examination text into a strictly structured `MultiExamBatch` containing the structured questions for EACH examination paper, grouped under its corresponding `exam_id`.
+
+For each examination paper:
+- Emit an `ExamQuestionBatch` with its exact `exam_id` (e.g. 'ANA_2012_CAT_P1').
+- In `questions`, include every question from that examination paper transformed into a `StructuredQuestion`.
+- Never mix questions from different exams under the same `exam_id`.
 
 CRITICAL INVARIANTS & STRUCTURING RULES:
 1. QUESTION IDENTIFICATION & NUMBERING:
@@ -109,12 +124,15 @@ In our preclinical database architecture, all in-course assessment items belong 
 """
 
 
-def create_stage3_agent(model_name: str | None = None) -> Agent:
+def create_stage3_agent(
+    model_name: str | None = None,
+    output_schema: type | None = None,
+) -> Agent:
     """Initializes the Stage 3 structuring agent with strict Pydantic output schema and HTTP retry options."""
     return Agent(
         name="stage3_structuring_agent",
         model=model_name or STAGE3_MODEL,
-        output_schema=QuestionBatch,
+        output_schema=output_schema or MultiExamBatch,
         instruction=STAGE3_SYSTEM_INSTRUCTION,
         generate_content_config=types.GenerateContentConfig(
             http_options=types.HttpOptions(
@@ -127,134 +145,57 @@ def create_stage3_agent(model_name: str | None = None) -> Agent:
 root_agent = create_stage3_agent()
 
 
-async def structure_exam_paper(
-    isolated_markdown: str,
-    pointer: ExamPointer,
-    agent: Agent | None = None,
-    app_name: str = "medical_exam_pipeline",
-) -> QuestionBatch:
-    """Submits an entire exam paper to Gemini Flash in a single call to produce structured questions.
+def bundle_exams_by_page_budget(
+    sliced_exams: list[tuple[ExamPointer, str]],
+    max_pages: int = 25,
+) -> list[list[tuple[ExamPointer, str]]]:
+    """Groups consecutive whole exams into bundles up to max_pages.
+
+    Exams are grouped so that:
+    1. No exam is ever split across bundles.
+    2. Only exams of the same discipline are grouped together (keeps taxonomy context cohesive).
+    3. If a single exam is larger than max_pages, it is assigned to its own solo bundle.
 
     Args:
-        isolated_markdown: Markdown segment representing the single isolated examination.
-        pointer: ExamPointer containing exam metadata and page ranges.
-        agent: Optional custom Agent instance.
-        app_name: ADK application name.
+        sliced_exams: Ordered list of (ExamPointer, isolated_markdown) tuples.
+        max_pages: Maximum cumulative pages per bundle (default: 25).
 
     Returns:
-        Validated QuestionBatch object containing all structured questions.
+        List of exam bundles, where each bundle is a list of (ExamPointer, isolated_markdown) tuples.
     """
-    structuring_agent = agent or create_stage3_agent()
-    session_service = InMemorySessionService()
-    runner = Runner(
-        agent=structuring_agent,
-        session_service=session_service,
-        app_name=app_name,
-    )
+    bundles: list[list[tuple[ExamPointer, str]]] = []
+    current_bundle: list[tuple[ExamPointer, str]] = []
+    current_pages = 0
+    current_discipline: str | None = None
 
-    user_id = "exam_pipeline_worker"
-    session_id = f"stage3_structuring_{pointer.exam_id}"
+    for pointer, md in sliced_exams:
+        exam_pages = max(1, pointer.end_page - pointer.start_page + 1)
 
-    await session_service.create_session(
-        app_name=app_name,
-        user_id=user_id,
-        session_id=session_id,
-    )
+        if current_bundle and (
+            (current_pages + exam_pages > max_pages)
+            or (pointer.discipline != current_discipline)
+        ):
+            bundles.append(current_bundle)
+            current_bundle = []
+            current_pages = 0
+            current_discipline = None
 
-    category_hint = (
-        f"Designated Category: {pointer.category}\n"
-        if pointer.category and pointer.category != "UNKNOWN"
-        else ""
-    )
-    level_hint = (
-        f"Designated Academic Level: {pointer.level}\n"
-        if pointer.level and pointer.level != "UNKNOWN"
-        else ""
-    )
+        current_bundle.append((pointer, md))
+        current_pages += exam_pages
+        current_discipline = pointer.discipline
 
-    taxonomy_context = get_taxonomy_prompt_context(
-        discipline=pointer.discipline,
-        level=pointer.level if pointer.level != "UNKNOWN" else None,
-    )
+    if current_bundle:
+        bundles.append(current_bundle)
 
-    prompt = (
-        f"Please structure the following {pointer.discipline} examination paper:\n"
-        f"Exam ID: {pointer.exam_id}\n"
-        f"Paper Title: {pointer.paper_title}\n"
-        f"{category_hint}"
-        f"{level_hint}"
-        f"Session: {pointer.session}\n"
-        f"Default Examiner: {pointer.examiner}\n"
-        f"Booklet Page Span: Pages {pointer.start_page} to {pointer.end_page}\n\n"
-        f"--- TAXONOMY GUIDANCE ---\n"
-        f"{taxonomy_context}\n\n"
-        f"--- BEGIN EXAM TEXT ---\n"
-        f"{isolated_markdown}\n"
-        f"--- END EXAM TEXT ---"
-    )
+    return bundles
 
-    user_message = types.Content(
-        role="user",
-        parts=[types.Part.from_text(text=prompt)],
-    )
 
-    max_retries = 5
-    raw_json = ""
-    for attempt in range(1, max_retries + 1):
-        try:
-            session_id = f"stage3_structuring_{pointer.exam_id}_{attempt}"
-            await session_service.create_session(
-                app_name=app_name,
-                user_id=user_id,
-                session_id=session_id,
-            )
-
-            collected_json_text: list[str] = []
-            async for event in runner.run_async(
-                user_id=user_id,
-                session_id=session_id,
-                new_message=user_message,
-            ):
-                # Method B Safety Check: 3-line truncation assertion
-                finish_reason = getattr(event, "finish_reason", None)
-                if finish_reason and str(finish_reason).endswith("MAX_TOKENS"):
-                    raise RuntimeError(
-                        f"Unbelievable: 65,536 token ceiling breached on exam {pointer.exam_id}!"
-                    )
-
-                if event.content and event.content.role == "model":
-                    for part in event.content.parts:
-                        if part.text:
-                            collected_json_text.append(part.text)
-
-            raw_json = "".join(collected_json_text).strip()
-            if not raw_json:
-                raise RuntimeError(
-                    f"Stage 3 structuring agent returned an empty response for exam {pointer.exam_id}."
-                )
-            break
-        except Exception as exc:
-            if is_resource_exhausted_error(exc) and attempt < max_retries:
-                backoff = calculate_backoff(attempt=attempt, base=12.0)
-                reason = get_retry_reason(exc)
-                print(
-                    f"\n  {reason} during Stage 3 structuring ({pointer.exam_id}). "
-                    f"Retrying in {int(backoff)}s (attempt {attempt}/{max_retries})...",
-                    flush=True,
-                )
-                await asyncio.sleep(backoff)
-            else:
-                raise
-
-    if raw_json.startswith("```json"):
-        raw_json = raw_json.removeprefix("```json").removesuffix("```").strip()
-    elif raw_json.startswith("```"):
-        raw_json = raw_json.removeprefix("```").removesuffix("```").strip()
-
-    batch = QuestionBatch.model_validate_json(raw_json)
-
-    # Post-processing normalization against canonical taxonomy
-    for q in batch.questions:
+def normalize_structured_questions(
+    questions: list[StructuredQuestion],
+    pointer: ExamPointer,
+) -> list[StructuredQuestion]:
+    """Post-processing normalization against canonical curriculum taxonomy."""
+    for q in questions:
         # 1. Inherit level and institution from pointer if unknown
         if (q.level == "UNKNOWN" or not q.level) and pointer.level != "UNKNOWN":
             q.level = pointer.level
@@ -294,4 +235,194 @@ async def structure_exam_paper(
                 level=effective_lvl,
             )
 
-    return batch
+    return questions
+
+
+async def structure_exam_bundle(
+    bundle: list[tuple[ExamPointer, str]],
+    agent: Agent | None = None,
+    app_name: str = "medical_exam_pipeline",
+) -> MultiExamBatch:
+    """Submits a bundle of examination papers to Gemini Flash in a single call to produce structured questions.
+
+    Args:
+        bundle: List of (ExamPointer, isolated_markdown) tuples belonging to this bundle.
+        agent: Optional custom Agent instance.
+        app_name: ADK application name.
+
+    Returns:
+        Validated MultiExamBatch object containing all structured questions grouped by exam_id.
+    """
+    if not bundle:
+        return MultiExamBatch(exams=[])
+
+    structuring_agent = agent or create_stage3_agent()
+    session_service = InMemorySessionService()
+    runner = Runner(
+        agent=structuring_agent,
+        session_service=session_service,
+        app_name=app_name,
+    )
+
+    primary_pointer = bundle[0][0]
+    bundle_slug = f"{primary_pointer.exam_id}_bundle_{len(bundle)}"
+    user_id = "exam_pipeline_worker"
+
+    distinct_disciplines = {p.discipline for p, _ in bundle}
+    taxonomy_sections = [
+        get_taxonomy_prompt_context(
+            discipline=disc,
+            level=primary_pointer.level if primary_pointer.level != "UNKNOWN" else None,
+        )
+        for disc in sorted(distinct_disciplines)
+    ]
+    taxonomy_context = "\n\n".join(taxonomy_sections)
+
+    exam_blocks: list[str] = []
+    for pointer, isolated_md in bundle:
+        category_hint = (
+            f"Category: {pointer.category}\n"
+            if pointer.category and pointer.category != "UNKNOWN"
+            else ""
+        )
+        level_hint = (
+            f"Academic Level: {pointer.level}\n"
+            if pointer.level and pointer.level != "UNKNOWN"
+            else ""
+        )
+        exam_block = (
+            f"=== BEGIN EXAMINATION: {pointer.exam_id} ===\n"
+            f"Exam ID: {pointer.exam_id}\n"
+            f"Paper Title: {pointer.paper_title}\n"
+            f"Discipline: {pointer.discipline}\n"
+            f"{category_hint}"
+            f"{level_hint}"
+            f"Session: {pointer.session}\n"
+            f"Default Examiner: {pointer.examiner}\n"
+            f"Booklet Page Span: Pages {pointer.start_page} to {pointer.end_page}\n\n"
+            f"{isolated_md}\n"
+            f"=== END EXAMINATION: {pointer.exam_id} ==="
+        )
+        exam_blocks.append(exam_block)
+
+    joined_exams = "\n\n".join(exam_blocks)
+    prompt = (
+        f"Please structure the following {len(bundle)} examination paper(s) into a MultiExamBatch.\n"
+        f"For each exam, emit an ExamQuestionBatch with the exact matching `exam_id` and all its structured questions.\n\n"
+        f"--- CANONICAL TAXONOMY GUIDANCE ---\n"
+        f"{taxonomy_context}\n\n"
+        f"--- BEGIN PAPERS ---\n"
+        f"{joined_exams}\n"
+        f"--- END PAPERS ---"
+    )
+
+    user_message = types.Content(
+        role="user",
+        parts=[types.Part.from_text(text=prompt)],
+    )
+
+    max_retries = 6
+    raw_json = ""
+    for attempt in range(1, max_retries + 1):
+        try:
+            session_id = f"stage3_{bundle_slug}_{attempt}"
+            await session_service.create_session(
+                app_name=app_name,
+                user_id=user_id,
+                session_id=session_id,
+            )
+
+            collected_json_text: list[str] = []
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=user_message,
+            ):
+                finish_reason = getattr(event, "finish_reason", None)
+                if finish_reason and str(finish_reason).endswith("MAX_TOKENS"):
+                    raise RuntimeError(
+                        f"65,536 token ceiling breached on bundle {bundle_slug}!"
+                    )
+
+                if event.content and event.content.role == "model":
+                    for part in event.content.parts:
+                        if part.text:
+                            collected_json_text.append(part.text)
+
+            raw_json = "".join(collected_json_text).strip()
+            if not raw_json:
+                raise RuntimeError(
+                    f"Stage 3 structuring agent returned an empty response for bundle {bundle_slug}."
+                )
+            break
+        except Exception as exc:
+            if is_resource_exhausted_error(exc) and attempt < max_retries:
+                backoff = calculate_backoff(attempt=attempt, base=6.0)
+                reason = get_retry_reason(exc)
+                print(
+                    f"\n  {reason} during Stage 3 structuring ({bundle_slug}). "
+                    f"Retrying in {int(backoff)}s (attempt {attempt}/{max_retries})...",
+                    flush=True,
+                )
+                await asyncio.sleep(backoff)
+            else:
+                raise
+
+    if raw_json.startswith("```json"):
+        raw_json = raw_json.removeprefix("```json").removesuffix("```").strip()
+    elif raw_json.startswith("```"):
+        raw_json = raw_json.removeprefix("```").removesuffix("```").strip()
+
+    try:
+        multi_batch = MultiExamBatch.model_validate_json(raw_json)
+    except Exception:
+        single_batch = QuestionBatch.model_validate_json(raw_json)
+        multi_batch = MultiExamBatch(
+            exams=[ExamQuestionBatch(exam_id=primary_pointer.exam_id, questions=single_batch.questions)]
+        )
+
+    pointer_map = {p.exam_id: p for p, _ in bundle}
+    for exam_batch in multi_batch.exams:
+        matching_pointer = pointer_map.get(exam_batch.exam_id, primary_pointer)
+        exam_batch.questions = normalize_structured_questions(
+            questions=exam_batch.questions,
+            pointer=matching_pointer,
+        )
+
+    returned_ids = {eb.exam_id for eb in multi_batch.exams}
+    for pointer, _ in bundle:
+        if pointer.exam_id not in returned_ids:
+            multi_batch.exams.append(ExamQuestionBatch(exam_id=pointer.exam_id, questions=[]))
+
+    return multi_batch
+
+
+async def structure_exam_paper(
+    isolated_markdown: str,
+    pointer: ExamPointer,
+    agent: Agent | None = None,
+    app_name: str = "medical_exam_pipeline",
+) -> QuestionBatch:
+    """Backward-compatible single-exam structuring function.
+
+    Args:
+        isolated_markdown: Markdown segment representing the single isolated examination.
+        pointer: ExamPointer containing exam metadata and page ranges.
+        agent: Optional custom Agent instance.
+        app_name: ADK application name.
+
+    Returns:
+        Validated QuestionBatch object containing all structured questions.
+    """
+    multi_batch = await structure_exam_bundle(
+        bundle=[(pointer, isolated_markdown)],
+        agent=agent,
+        app_name=app_name,
+    )
+    for eb in multi_batch.exams:
+        if eb.exam_id == pointer.exam_id:
+            return QuestionBatch(questions=eb.questions)
+    if multi_batch.exams:
+        return QuestionBatch(questions=multi_batch.exams[0].questions)
+    return QuestionBatch(questions=[])
+

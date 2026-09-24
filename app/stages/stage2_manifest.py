@@ -16,9 +16,15 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
 from app.schemas import ExamManifest, ExamPointer, PreScanMetadata
-from app.tools.retry_handler import calculate_backoff, get_retry_reason, is_resource_exhausted_error
+from app.tools.retry_handler import (
+    calculate_backoff,
+    configure_clean_logging,
+    get_retry_reason,
+    is_resource_exhausted_error,
+)
 
 load_dotenv()
+configure_clean_logging()
 
 STAGE2_MODEL = os.getenv("STAGE2_MODEL", "gemini-3.5-flash-lite")
 
@@ -203,7 +209,7 @@ async def generate_manifest(
         parts=[types.Part.from_text(text=prompt)],
     )
 
-    max_retries = 5
+    max_retries = 6
     raw_json = ""
     for attempt in range(1, max_retries + 1):
         try:
@@ -231,7 +237,7 @@ async def generate_manifest(
             break
         except Exception as exc:
             if is_resource_exhausted_error(exc) and attempt < max_retries:
-                backoff = calculate_backoff(attempt=attempt, base=12.0)
+                backoff = calculate_backoff(attempt=attempt, base=6.0)
                 reason = get_retry_reason(exc)
                 print(
                     f"\n  {reason} during Stage 2 manifest generation. "

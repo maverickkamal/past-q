@@ -37,6 +37,16 @@ class QuestionBatch(BaseModel):
     questions: list[StructuredQuestion]
 
 
+class ExamQuestionBatch(BaseModel):
+    exam_id: str = Field(description="The exam_id matching the ExamPointer (e.g. 'ANA_2021_PROF_P1')")
+    questions: list[StructuredQuestion] = Field(default=[], description="All structured questions belonging to this specific exam")
+
+
+class MultiExamBatch(BaseModel):
+    exams: list[ExamQuestionBatch] = Field(default=[], description="List of structured exam question batches, one per exam in the bundle")
+
+
+
 class ExamPointer(BaseModel):
     exam_id: str = Field(description="Deterministic slug, e.g., 'ANA_2021_PROF_P1'")
     discipline: Literal["Anatomy", "Physiology", "Biochemistry"]

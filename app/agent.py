@@ -35,11 +35,16 @@ from app.stages.stage2_manifest import (
     generate_manifest,
     slice_exam_papers,
 )
-from app.stages.stage3_structuring import create_stage3_agent, structure_exam_paper
+from app.stages.stage3_structuring import (
+    bundle_exams_by_page_budget,
+    create_stage3_agent,
+    structure_exam_bundle,
+    structure_exam_paper,
+)
 from app.stages.stage4_validator import BatchValidationResult, validate_batch
-from app.tools.retry_handler import get_retry_reason
+from app.tools.retry_handler import configure_clean_logging, get_retry_reason, is_transient_error
 
-logging.getLogger("google_genai.models").setLevel(logging.ERROR)
+configure_clean_logging()
 
 # 1. Initialize Stage Sub-Agents
 transcriber_agent = create_stage1_agent()
@@ -176,40 +181,56 @@ async def run_pipeline(
 
     sliced_exams = slice_exam_papers(master_md, manifest)
 
-    # --- STAGE 3 & 4: FULL EXAM STRUCTURING & DETERMINISTIC VALIDATION ---
+    # --- STAGE 3 & 4: FULL EXAM STRUCTURING (BUNDLED) & DETERMINISTIC VALIDATION ---
     print(f"\n[Stage 3 & 4] Structuring and validating exam papers...")
     total_questions = 0
     total_approved = 0
     total_review = 0
 
-    for pointer, isolated_md in sliced_exams.values():
+    exam_bundles = bundle_exams_by_page_budget(list(sliced_exams.values()), max_pages=25)
+    print(f"  Grouped {len(sliced_exams)} exam paper(s) into {len(exam_bundles)} processing bundle(s).")
+
+    for bundle_idx, bundle in enumerate(exam_bundles, start=1):
         await asyncio.sleep(2)
-        print(f"\n  Structuring [{pointer.exam_id}] ({pointer.discipline}, {pointer.level})...")
-        structured_batch = await structure_exam_paper(isolated_md, pointer, agent=structuring_agent)
-        print(f"    Extracted {len(structured_batch.questions)} questions.")
+        bundle_titles = ", ".join(f"[{p.exam_id}]" for p, _ in bundle)
+        print(f"\n  Processing Bundle {bundle_idx}/{len(exam_bundles)}: {bundle_titles}...")
 
-        # Stage 4: Deterministic Validation & Deduplication
-        val_result = validate_batch(structured_batch, exam_pointer=pointer, check_asset_exists=True, deduplicate_verbatim=True)
-        print(f"    Validation: {val_result.approved_count} APPROVED, {val_result.needs_review_count} NEEDS_REVIEW")
+        multi_batch = await structure_exam_bundle(bundle, agent=structuring_agent)
+        exam_batch_map = {eb.exam_id: eb for eb in multi_batch.exams}
 
-        # Stage 4: Persistence
-        effective_exam_type = (
-            "CONTINUOUS_ASSESSMENT" if pointer.category == "CA_QUIZ"
-            else "STEEPLECHASE_OSPE" if pointer.category == "STEEPLECHASE"
-            else exam_type
-        )
-        persist_validated_exam(
-            exam_pointer=pointer,
-            questions=val_result.questions,
-            validation_results=val_result.results,
-            source_document=pdf_file.name,
-            exam_type=effective_exam_type,
-            db_path=target_db,
-        )
+        for pointer, isolated_md in bundle:
+            exam_batch = exam_batch_map.get(pointer.exam_id)
+            batch_questions = exam_batch.questions if exam_batch else []
+            structured_batch = QuestionBatch(questions=batch_questions)
+            print(f"    - [{pointer.exam_id}] Extracted {len(structured_batch.questions)} questions.")
 
-        total_questions += val_result.total_questions
-        total_approved += val_result.approved_count
-        total_review += val_result.needs_review_count
+            # Stage 4: Deterministic Validation & Deduplication
+            val_result = validate_batch(
+                structured_batch,
+                exam_pointer=pointer,
+                check_asset_exists=True,
+                deduplicate_verbatim=True,
+            )
+            print(f"      Validation: {val_result.approved_count} APPROVED, {val_result.needs_review_count} NEEDS_REVIEW")
+
+            # Stage 4: Persistence
+            effective_exam_type = (
+                "CONTINUOUS_ASSESSMENT" if pointer.category == "CA_QUIZ"
+                else "STEEPLECHASE_OSPE" if pointer.category == "STEEPLECHASE"
+                else exam_type
+            )
+            persist_validated_exam(
+                exam_pointer=pointer,
+                questions=val_result.questions,
+                validation_results=val_result.results,
+                source_document=pdf_file.name,
+                exam_type=effective_exam_type,
+                db_path=target_db,
+            )
+
+            total_questions += val_result.total_questions
+            total_approved += val_result.approved_count
+            total_review += val_result.needs_review_count
 
     duration = round(time.time() - start_time, 2)
     stats = get_database_stats(target_db)
@@ -293,10 +314,8 @@ async def run_batch_or_single(
             )
             reports.append(report)
 
-            # Only pause for cooldown if the booklet was actively processed (not skipped)
             was_processed = getattr(report, "status", None) == "COMPLETED"
             if was_processed and len(pdf_files) > 1 and i < len(pdf_files) and delay_seconds > 0:
-                # Check if any remaining files need processing
                 remaining_pending = any(
                     p.name.lower().strip() not in ingested_set or force
                     for p in pdf_files[i:]
@@ -312,7 +331,11 @@ async def run_batch_or_single(
             break
         except Exception as e:
             reason = get_retry_reason(e)
-            print(f"\n[ERROR] Failed ingesting '{pdf_file.name}': {reason}. Continuing queue...\n", flush=True)
+            if is_transient_error(e):
+                print(f"\n[ERROR] Failed ingesting '{pdf_file.name}': {reason}. Pausing 15s for network recovery before next PDF...\n", flush=True)
+                await asyncio.sleep(15)
+            else:
+                print(f"\n[ERROR] Failed ingesting '{pdf_file.name}': {reason}. Continuing queue...\n", flush=True)
 
     if auto_recurrence and any(r.total_questions > 0 for r in reports):
         print("\n[Auto-Recurrence] Running TypeSafe Jev semantic recurrence clustering across all ingested exams...", flush=True)

@@ -17,10 +17,15 @@ from google.genai import types
 from app.config import PAGE_CHUNK_SIZE
 from app.stages.stage1_chunker import PDFChunk, slice_pdf_chunks
 from app.tools.diagram_tool import crop_diagram_tool
-from app.tools.retry_handler import calculate_backoff, get_retry_reason, is_resource_exhausted_error
-
+from app.tools.retry_handler import (
+    calculate_backoff,
+    configure_clean_logging,
+    get_retry_reason,
+    is_resource_exhausted_error,
+)
 
 load_dotenv()
+configure_clean_logging()
 
 STAGE1_MODEL = os.getenv("STAGE1_MODEL", "gemini-3.5-flash-lite")
 
@@ -84,25 +89,11 @@ async def transcribe_chunk(
 ) -> str:
     """Executes a multimodal transcription turn for a single PDF chunk."""
     user_id = "exam_pipeline_worker"
-    session_id = f"chunk_session_{chunk.chunk_index:04d}"
-
-    await session_service.create_session(
-        app_name=app_name,
-        user_id=user_id,
-        session_id=session_id,
-    )
 
     # Buffer raw PDF bytes as current_chunk.pdf in ADK artifact storage
     pdf_artifact = types.Part.from_bytes(
         data=chunk.pdf_bytes,
         mime_type="application/pdf",
-    )
-    await artifact_service.save_artifact(
-        app_name=app_name,
-        user_id=user_id,
-        session_id=session_id,
-        filename="current_chunk.pdf",
-        artifact=pdf_artifact,
     )
 
     prompt_directive = (
@@ -116,9 +107,6 @@ async def transcribe_chunk(
         f"4. Multi-Page Continuation: Continue through all {chunk.page_count} pages in this chunk without stopping early!"
     )
 
-
-
-
     user_message = types.Content(
         role="user",
         parts=[
@@ -127,9 +115,23 @@ async def transcribe_chunk(
         ],
     )
 
-    max_retries = 5
+    max_retries = 6
     for attempt in range(1, max_retries + 1):
         try:
+            session_id = f"chunk_{chunk.chunk_index:04d}_att_{attempt}"
+            await session_service.create_session(
+                app_name=app_name,
+                user_id=user_id,
+                session_id=session_id,
+            )
+            await artifact_service.save_artifact(
+                app_name=app_name,
+                user_id=user_id,
+                session_id=session_id,
+                filename="current_chunk.pdf",
+                artifact=pdf_artifact,
+            )
+
             collected_content: list[str] = []
             async for event in runner.run_async(
                 user_id=user_id,
@@ -154,7 +156,7 @@ async def transcribe_chunk(
             return "".join(collected_content).strip()
         except Exception as exc:
             if is_resource_exhausted_error(exc) and attempt < max_retries:
-                backoff = calculate_backoff(attempt=attempt, base=12.0)
+                backoff = calculate_backoff(attempt=attempt, base=6.0)
                 reason = get_retry_reason(exc)
                 print(
                     f"\n  {reason}. "
