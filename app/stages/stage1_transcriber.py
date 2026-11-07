@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 from pathlib import Path
 from typing import Generator
 
@@ -14,7 +15,7 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from app.config import PAGE_CHUNK_SIZE
+from app.config import PAGE_CHUNK_SIZE, TRANSCRIPTS_DIR
 from app.stages.stage1_chunker import PDFChunk, slice_pdf_chunks
 from app.tools.diagram_tool import crop_diagram_tool
 from app.tools.retry_handler import (
@@ -178,6 +179,7 @@ async def run_stage1(
     pdf_path: str | Path | bytes | None = None,
 ) -> str:
     """Iterates through PDF chunks, transcribes content, and crops visuals using Google ADK.
+    Saves and reads chunk checkpoints and master transcripts to/from disk to eliminate redundant calls.
 
     Args:
         pdf_source: Path to PDF or raw bytes.
@@ -193,6 +195,24 @@ async def run_stage1(
     source = pdf_source or pdf_path
     if source is None:
         raise ValueError("pdf_source or pdf_path must be provided to run_stage1.")
+
+    # Disk caching setup
+    source_name = Path(source).name if isinstance(source, (str, Path)) else "memory_document.pdf"
+    clean_stem = re.sub(r"[^A-Za-z0-9_\-\.]", "_", Path(source_name).stem).strip("_")
+    master_transcript_path = TRANSCRIPTS_DIR / f"{clean_stem}.md"
+    chunk_cache_dir = TRANSCRIPTS_DIR / f"{clean_stem}_chunks"
+
+    # Fast master cache hit: if full transcript exists and is valid, load directly
+    if max_chunks is None and master_transcript_path.exists() and master_transcript_path.stat().st_size > 500:
+        cached_md = master_transcript_path.read_text(encoding="utf-8")
+        print(
+            f"  [Stage 1 Cache Hit] Found existing master transcript for '{source_name}' on disk "
+            f"({len(cached_md)} chars). Skipping API transcription.",
+            flush=True,
+        )
+        return cached_md
+
+    chunk_cache_dir.mkdir(parents=True, exist_ok=True)
 
     agent_to_use = agent or create_stage1_agent()
     session_service = InMemorySessionService()
@@ -212,6 +232,17 @@ async def run_stage1(
         if max_chunks is not None and i >= max_chunks:
             break
 
+        chunk_file = chunk_cache_dir / f"chunk_{chunk.chunk_index + 1:03d}.md"
+        if chunk_file.exists() and chunk_file.stat().st_size > 50:
+            transcription = chunk_file.read_text(encoding="utf-8")
+            assembled_markdown.append(transcription)
+            print(
+                f"  [Stage 1 Chunk Cache Hit] Chunk {chunk.chunk_index + 1} (Pages {chunk.start_page}-{chunk.end_page}) "
+                f"loaded from disk ({len(transcription)} chars).",
+                flush=True,
+            )
+            continue
+
         print(f"  [Stage 1] Transcribing Chunk {chunk.chunk_index + 1} (Pages {chunk.start_page}-{chunk.end_page})...", flush=True)
         transcription = await transcribe_chunk(
             runner=runner,
@@ -220,8 +251,14 @@ async def run_stage1(
             chunk=chunk,
         )
         if transcription:
+            chunk_file.write_text(transcription, encoding="utf-8")
             assembled_markdown.append(transcription)
             print(f"    -> Chunk {chunk.chunk_index + 1} completed ({len(transcription)} chars).", flush=True)
             await asyncio.sleep(2)
 
-    return "\n\n".join(assembled_markdown)
+    full_transcript = "\n\n".join(assembled_markdown)
+    if full_transcript and max_chunks is None:
+        master_transcript_path.write_text(full_transcript, encoding="utf-8")
+        print(f"  [Stage 1 Saved] Master transcript written to '{master_transcript_path.name}' ({len(full_transcript)} chars).", flush=True)
+
+    return full_transcript

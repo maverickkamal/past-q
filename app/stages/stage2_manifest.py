@@ -9,6 +9,7 @@ the master document into isolated exam paper strings in Python.
 import asyncio
 import os
 import re
+from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.runners import Runner
@@ -47,8 +48,15 @@ Your responsibility:
    - session: The academic session (e.g. '2012/2013') or 'UNKNOWN'.
    - examiner: The primary lecturer/examiner if indicated, otherwise 'UNKNOWN'.
    - start_page: The 1-based integer page where this exam starts.
-   - end_page: The 1-based integer page where this exam ends (inclusive).
-4. STRICT INVARIANT:
+4. COMPILATIONS, QUESTION BANKS, AND TEXTBOOKS:
+   - If the booklet is a subject question bank, MCQ compilation, or revision textbook (e.g. Martin Caon, MedHub compilation) rather than a single university exam:
+   - Identify EACH Chapter, System, or Major Topic Section as a distinct exam paper.
+   - For example:
+     - paper_title: 'Chapter 1: Organisation of the Body' (Pages 1-6) -> exam_id: 'ANA_CH01_ORGANISATION'
+     - paper_title: 'Chapter 2: Cells and Tissues' (Pages 7-34) -> exam_id: 'ANA_CH02_CELLS'
+   - Set category='OBJECTIVE' for MCQ banks, or 'CA_QUIZ'/'ESSAY' as appropriate.
+   - NEVER return an empty exams list (`[]`) if the document contains medical questions or MCQs. Every page containing questions must belong to an exam entry.
+5. STRICT INVARIANT:
    - NEVER output, summarize, or reproduce question stems, MCQ options, or exam content.
    - Output ONLY the structured ExamManifest containing the list of ExamPointer objects.
 """
@@ -255,3 +263,124 @@ async def generate_manifest(
                 ep.institution = pre_scan_meta.institution
 
     return manifest
+
+
+def synthesize_fallback_manifest(
+    master_markdown: str,
+    pre_scan_meta: PreScanMetadata | None = None,
+    source_name: str = "booklet",
+) -> ExamManifest:
+    """Deterministically synthesizes an ExamManifest when LLM manifest generation produces 0 exams.
+
+    Ensures that compilations, textbooks, and past-question collections are never dropped:
+    1. Attempts to detect Chapter or Section headings and their corresponding page break locations.
+    2. If chapters are found, partitions the document into chapter-wise ExamPointers.
+    3. If no chapters are found, partitions the document into consecutive ~20-page blocks.
+
+    Args:
+        master_markdown: Full transcribed markdown containing page break markers.
+        pre_scan_meta: Optional pre-scan metadata for discipline/level context.
+        source_name: Name of the PDF or source booklet file.
+
+    Returns:
+        ExamManifest containing partitioned ExamPointers.
+    """
+    page_matches = list(
+        re.finditer(
+            r"<!--\s*PAGE\s+BREAK\s*\[(\d+)\]\s*-->", master_markdown, re.IGNORECASE
+        )
+    )
+    if not page_matches:
+        page_numbers = [1]
+        page_offsets = {1: 0}
+    else:
+        page_offsets = {int(m.group(1)): m.start() for m in page_matches}
+        page_numbers = sorted(page_offsets.keys())
+
+    min_page = page_numbers[0]
+    max_page = page_numbers[-1]
+
+    discipline = "Anatomy"
+    if pre_scan_meta and pre_scan_meta.discipline in ("Anatomy", "Physiology", "Biochemistry"):
+        discipline = pre_scan_meta.discipline
+    elif "physio" in source_name.lower():
+        discipline = "Physiology"
+    elif "bioch" in source_name.lower():
+        discipline = "Biochemistry"
+
+    disc_slug = discipline[:3].upper()
+    level = "200L"
+    if pre_scan_meta and getattr(pre_scan_meta, "level", None) in ("200L", "300L"):
+        level = getattr(pre_scan_meta, "level")
+    session = pre_scan_meta.session if (pre_scan_meta and pre_scan_meta.session != "UNKNOWN") else "COMPILATION"
+    institution = pre_scan_meta.institution if (pre_scan_meta and pre_scan_meta.institution != "UNKNOWN") else "UNKNOWN"
+
+    # 1. Attempt to detect Chapter / Section headings
+    chapter_regex = re.compile(
+        r"(?:^|\n)\s*(?:#+\s*)?(?:Chapter|CHAPTER|Section|SECTION)\s+([0-9IVXLCDM]+)[\s:\-–—]+([^\n\r]+)",
+        re.IGNORECASE,
+    )
+    chapter_matches = list(chapter_regex.finditer(master_markdown))
+
+    exams: list[ExamPointer] = []
+    clean_stem = re.sub(r"[^A-Za-z0-9]", "_", Path(source_name).stem).strip("_")
+
+    if len(chapter_matches) >= 2:
+        chapter_pages: list[tuple[int, str, str]] = []  # (start_page, chapter_num, title)
+        for m in chapter_matches:
+            ch_num = m.group(1).strip()
+            ch_title = m.group(2).strip()
+            ch_title = re.sub(r"[\*#_]+", "", ch_title).strip()
+            m_offset = m.start()
+            prior_pages = [p for p in page_numbers if page_offsets.get(p, 0) <= m_offset]
+            start_p = prior_pages[-1] if prior_pages else min_page
+            chapter_pages.append((start_p, ch_num, ch_title))
+
+        for idx, (start_p, ch_num, ch_title) in enumerate(chapter_pages):
+            if idx + 1 < len(chapter_pages):
+                next_start = chapter_pages[idx + 1][0]
+                end_p = max(start_p, next_start - 1)
+            else:
+                end_p = max_page
+
+            title_slug = re.sub(r"[^A-Za-z0-9]", "_", ch_title)[:12].strip("_")
+            exam_id = f"{disc_slug}_CH{ch_num}_{title_slug}".rstrip("_")
+            exams.append(
+                ExamPointer(
+                    exam_id=exam_id,
+                    discipline=discipline,
+                    level=level,
+                    category="OBJECTIVE",
+                    paper_title=f"Chapter {ch_num}: {ch_title}",
+                    session=session,
+                    examiner="UNKNOWN",
+                    institution=institution,
+                    start_page=start_p,
+                    end_page=end_p,
+                )
+            )
+
+    # 2. If chapter detection didn't produce enough boundaries, partition by page chunks (~20 pages)
+    if len(exams) < 2:
+        exams = []
+        chunk_size = 20
+        part_idx = 1
+        for start_p in range(min_page, max_page + 1, chunk_size):
+            end_p = min(start_p + chunk_size - 1, max_page)
+            exams.append(
+                ExamPointer(
+                    exam_id=f"{disc_slug}_{clean_stem[:14]}_P{part_idx:02d}",
+                    discipline=discipline,
+                    level=level,
+                    category="OBJECTIVE",
+                    paper_title=f"{clean_stem.replace('_', ' ').title()} - Part {part_idx} (Pages {start_p}-{end_p})",
+                    session=session,
+                    examiner="UNKNOWN",
+                    institution=institution,
+                    start_page=start_p,
+                    end_page=end_p,
+                )
+            )
+            part_idx += 1
+
+    return ExamManifest(exams=exams)

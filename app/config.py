@@ -28,5 +28,7 @@ MAX_OUTPUT_TOKENS = 65536
 TYPESAFE_API_KEY = os.getenv("TYPESAFE_API_KEY")
 TYPESAFE_MODEL = os.getenv("TYPESAFE_MODEL", "jev-latest")
 
-# Ensure assets directory exists
+# Ensure assets and transcripts directories exist
 ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+TRANSCRIPTS_DIR = Path(os.getenv("TRANSCRIPTS_DIR", str(BASE_DIR / "transcripts")))
+TRANSCRIPTS_DIR.mkdir(parents=True, exist_ok=True)

@@ -34,6 +34,7 @@ from app.stages.stage2_manifest import (
     create_stage2_agent,
     generate_manifest,
     slice_exam_papers,
+    synthesize_fallback_manifest,
 )
 from app.stages.stage3_structuring import (
     bundle_exams_by_page_budget,
@@ -175,6 +176,10 @@ async def run_pipeline(
     await asyncio.sleep(2)
     print(f"\n[Stage 2] Generating pointer manifest...")
     manifest = await generate_manifest(master_md, pre_scan_meta=pre_scan_meta, agent=manifest_agent)
+    if not manifest.exams and len(master_md) > 500:
+        print(f"  [Fallback Partitioner] Stage 2 emitted 0 exams for '{pdf_file.name}'. Activating fallback partitioner...", flush=True)
+        manifest = synthesize_fallback_manifest(master_md, pre_scan_meta=pre_scan_meta, source_name=pdf_file.name)
+
     print(f"  Identified {len(manifest.exams)} exam paper(s) in booklet:")
     for ep in manifest.exams:
         print(f"    - [{ep.exam_id}] {ep.paper_title} (Pages {ep.start_page}-{ep.end_page})")

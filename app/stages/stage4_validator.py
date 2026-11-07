@@ -25,6 +25,29 @@ from app.curriculum import get_canonical_system_regions
 from app.schemas import ExamPointer, QuestionBatch, StructuredQuestion
 
 
+VISUAL_SPECIMEN_PATTERNS: list[str] = [
+    r"\bpinned\b",
+    r"\bspecimen\b",
+    r"\bhistology\b",
+    r"\bslide\b",
+    r"\bphotomicrograph\b",
+    r"\bmicrograph\b",
+    r"\bradiograph\b",
+    r"\bx-ray\b",
+    r"\bct scan\b",
+    r"\bmri\b",
+    r"\barrow\b",
+    r"\bindicated by\b",
+    r"\bpointer\b",
+    r"\bstructure\s+[a-z0-9]\b",
+    r"\bshown\s+(?:above|below|here|in\s+the\s+figure|in\s+the\s+diagram|in\s+the\s+image)\b",
+    r"\bdiagram\s+(?:above|below)\b",
+    r"\bimage\s+(?:above|below)\b",
+    r"\bfigure\s+(?:above|below|\d+)\b",
+    r"\bidentify\s+the\s+(?:structure|organ|bone|tissue|muscle|nerve|artery|vein|part)\b",
+]
+
+
 def compute_question_fingerprint(stem_text: str, items: list[Any] | None = None) -> str:
     """Computes a normalized SHA-256 fingerprint from question stem and items to detect verbatim duplicates."""
     norm_stem = re.sub(r"\s+", " ", (stem_text or "").lower().strip())
@@ -89,10 +112,17 @@ def validate_question(
     flags: list[str] = []
 
     if question.category == "STEEPLECHASE":
-        if not question.has_diagram or not question.diagram_path:
-            flags.append("MISSING_MANDATORY_IMAGE")
-        elif check_asset_exists and not _check_diagram_exists(question.diagram_path):
-            flags.append(f"DIAGRAM_FILE_NOT_FOUND: {question.diagram_path}")
+        if question.has_diagram:
+            if not question.diagram_path:
+                flags.append("MISSING_MANDATORY_IMAGE")
+            elif check_asset_exists and not _check_diagram_exists(question.diagram_path):
+                flags.append(f"DIAGRAM_FILE_NOT_FOUND: {question.diagram_path}")
+        else:
+            # If no diagram is linked, only require one if the prompt explicitly references a visual specimen/diagram/slide
+            combined_text = (question.stem_text or "") + " " + " ".join(it.text for it in question.items)
+            has_visual_cue = any(re.search(pat, combined_text, re.IGNORECASE) for pat in VISUAL_SPECIMEN_PATTERNS)
+            if has_visual_cue:
+                flags.append("MISSING_MANDATORY_IMAGE")
 
     if question.total_marks is not None and question.items:
         explicit_item_marks = [it.marks for it in question.items if it.marks is not None]

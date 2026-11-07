@@ -9,3 +9,4 @@ pytest.*
 *.db
 exports/
 skills-lock.json
+transcripts/

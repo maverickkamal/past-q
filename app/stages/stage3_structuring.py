@@ -94,6 +94,10 @@ In our preclinical database architecture, all in-course assessment items belong 
      - For Essays: each marked subpart is an item: `label` = 'a', 'b', 'c', 'i', etc., `text` = subpart prompt, `marks` = explicit mark integer if indicated.
      - For Steeplechase: each question is an item: `label` = 'A', 'B', 'C', `text` = question prompt (e.g. "Identify the bone"), `marks` = marks if indicated.
    - For standalone essay questions without subparts, `items` may be empty `[]`.
+   - FILL-IN-THE-GAP / SENTENCE COMPLETION QUESTIONS:
+     - For sentences with fill-in blanks or recall prompts (e.g. 'The nitrogenous base present in lecithin is _____'):
+       - If multiple choice options (A through D) are provided: categorize as `category='OBJECTIVE'`, `sub_type='SBA'`, with options in `items`.
+       - If free-text blanks or open practical recall prompts: place the full prompt sentence in `stem_text`. If no specimen/image is depicted, set `has_diagram=False` and `diagram_path=None`.
 
 4. TAXONOMY & CURRICULAR MAPPING:
    - `discipline`: Must be 'Anatomy', 'Physiology', or 'Biochemistry' (inherit or refine from context).
@@ -234,6 +238,24 @@ def normalize_structured_questions(
                 discipline=effective_disc,
                 level=effective_lvl,
             )
+
+        # 4. Repair/synthesize stem_text if empty or whitespace-only but items exist
+        if not q.stem_text or len(q.stem_text.strip()) < 3:
+            if q.items:
+                if len(q.items) == 1 and len(q.items[0].text.strip()) >= 3:
+                    # Single item contains the whole question prompt: promote to stem
+                    q.stem_text = q.items[0].text.strip()
+                    q.items = []
+                else:
+                    # Multiple subparts without umbrella introduction: synthesize clean stem
+                    if q.category == "STEEPLECHASE":
+                        q.stem_text = "Answer the following practical/station questions:"
+                    elif q.category == "CA_QUIZ":
+                        q.stem_text = "Answer the following test questions:"
+                    elif q.category == "ESSAY":
+                        q.stem_text = "Answer the following questions:"
+                    else:
+                        q.stem_text = "Address the following question items:"
 
     return questions
 
