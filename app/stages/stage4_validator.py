@@ -206,7 +206,6 @@ def validate_batch(
     for q in batch.questions:
         if deduplicate_verbatim:
             fp = compute_question_fingerprint(q.stem_text, q.items)
-            # Deduplicate if question has meaningful content and was already seen in this exam
             if fp in seen_fingerprints and len((q.stem_text or "").strip()) >= 5:
                 continue
             seen_fingerprints.add(fp)

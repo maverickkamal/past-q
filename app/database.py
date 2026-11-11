@@ -25,7 +25,6 @@ def init_db(db_path: str | Path | None = None, schema_file: str | Path | None = 
     with get_connection(db_path) as conn:
         cursor = conn.cursor()
         
-        # Check if tables already exist and require column migrations prior to schema execution (such as new index creation)
         tables = [r["name"] for r in cursor.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()]
         if "exams" in tables:
             exam_cols = [r["name"] for r in cursor.execute("PRAGMA table_info(exams)").fetchall()]
@@ -39,7 +38,6 @@ def init_db(db_path: str | Path | None = None, schema_file: str | Path | None = 
 
         conn.commit()
 
-        # Run schema script (creates missing tables, views, and indexes)
         conn.executescript(schema_to_run)
         conn.commit()
 
@@ -249,7 +247,6 @@ def get_questions_by_filter(
         cursor.execute(query, params)
         rows = [dict(row) for row in cursor.fetchall()]
 
-    # Parse items_json
     for row in rows:
         if row.get("items_json"):
             row["items"] = json.loads(row["items_json"])
@@ -276,7 +273,6 @@ def persist_validated_exam(
 ) -> None:
     """Atomically persists an exam and its validated structured questions into SQLite."""
     with get_connection(db_path) as conn:
-        # 1. Save or update parent exam
         save_exam(
             exam_pointer=exam_pointer,
             source_document=source_document,
@@ -284,7 +280,6 @@ def persist_validated_exam(
             db_path=db_path,
         )
 
-        # 2. Save each question with its specific validation status & flag reasons
         for q, res in zip(questions, validation_results):
             flag_str = json.dumps(res.flag_reasons) if getattr(res, "flag_reasons", None) else None
             status = getattr(res, "review_status", "APPROVED")

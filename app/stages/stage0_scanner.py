@@ -89,21 +89,18 @@ def extract_filename_tokens(file_path: str | Path) -> dict[str, str]:
         "institution": "UNKNOWN",
     }
 
-    # 1. Check Discipline
     for token in tokens:
         clean = token.lower()
         if clean in DISCIPLINE_MAP:
             result["discipline"] = DISCIPLINE_MAP[clean]
             break
 
-    # 1b. Check Institution
     for token in tokens:
         clean = token.lower()
         if clean in COMMON_INSTITUTION_MAP:
             result["institution"] = COMMON_INSTITUTION_MAP[clean]
             break
 
-    # 2. Check Session / Year (e.g. 2021 2022, 2021/2022, or 2022)
     session_match = re.search(r"\b(20\d{2}\s*(?:[/]|\s+)?\s*20\d{2}|20\d{2})\b", normalized_stem)
     if session_match:
         raw_sess = session_match.group(1).strip()
@@ -116,22 +113,18 @@ def extract_filename_tokens(file_path: str | Path) -> dict[str, str]:
         else:
             result["session"] = raw_sess
 
-    # 3. Check Examiner (e.g. Prof Atiku, Dr Bello)
     examiner_match = re.search(r"\b(Prof\.?|Dr\.?)\s+([A-Za-z]+)", normalized_stem, re.IGNORECASE)
     if examiner_match:
         title = examiner_match.group(1).capitalize()
         name = examiner_match.group(2).capitalize()
         result["examiner"] = f"{title}. {name}"
 
-    # 4. Check Exam Type
     stem_lower = normalized_stem.lower()
     for pattern, exam_type in EXAM_TYPE_PATTERNS:
         if re.search(pattern, stem_lower):
             result["exam_type"] = exam_type
             break
 
-
-    # 5. Extract residual descriptive token as candidate topic
     topic_candidates = []
     for token in tokens:
         lower = token.lower()
@@ -165,18 +158,15 @@ def inspect_page_one_headers(pdf_path: str | Path) -> dict[str, str]:
         lines = [line.strip() for line in text.splitlines() if line.strip()]
         header_text = " ".join(lines[:15]).lower()
 
-        # Check for discipline
         for kw, disc in DISCIPLINE_MAP.items():
             if re.search(rf"\b{kw}\b", header_text):
                 result["discipline"] = disc
                 break
 
-        # Check for session (e.g. 2021/2022 session)
         session_match = re.search(r"\b(20\d{2}\s*/\s*20\d{2})\b", header_text)
         if session_match:
             result["session"] = re.sub(r"\s+", "", session_match.group(1))
 
-        # Check for examiner lines (e.g. Examiner: Prof. Gangadharan or Lecturer: Dr. X)
         examiner_match = re.search(
             r"(?:examiner|lecturer|course lecturer)[:\s]+(?:prof\.?|dr\.?)?\s*([A-Za-z\s]+)",
             header_text,
@@ -187,13 +177,11 @@ def inspect_page_one_headers(pdf_path: str | Path) -> dict[str, str]:
             if len(cand) < 40:
                 result["examiner"] = cand.title()
 
-        # Check for Paper Title
         for line in lines[:8]:
             if re.search(r"(paper\s+[i|v|x\d]+|2nd\s+mbbs|in-course)", line, re.IGNORECASE):
                 result["paper_title"] = line
                 break
 
-        # Check for Institution
         for kw, inst in COMMON_INSTITUTION_MAP.items():
             if re.search(rf"\b{kw}\b", header_text, re.IGNORECASE):
                 result["institution"] = inst

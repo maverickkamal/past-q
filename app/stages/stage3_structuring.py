@@ -200,13 +200,11 @@ def normalize_structured_questions(
 ) -> list[StructuredQuestion]:
     """Post-processing normalization against canonical curriculum taxonomy."""
     for q in questions:
-        # 1. Inherit level and institution from pointer if unknown
         if (q.level == "UNKNOWN" or not q.level) and pointer.level != "UNKNOWN":
             q.level = pointer.level
         if (getattr(q, "institution", "UNKNOWN") == "UNKNOWN" or not getattr(q, "institution", None)) and pointer.institution != "UNKNOWN":
             q.institution = pointer.institution
 
-        # 2. Normalize system_region deterministically
         effective_disc = q.discipline or pointer.discipline
         effective_lvl = q.level if q.level != "UNKNOWN" else None
         q.system_region = resolve_system_region(
@@ -215,7 +213,6 @@ def normalize_structured_questions(
             level=effective_lvl,
         )
 
-        # 2b. Jev System One fallback if still non-canonical
         canonical_regions = get_canonical_system_regions(discipline=effective_disc, level=effective_lvl)
         if canonical_regions and q.system_region not in canonical_regions:
             try:
@@ -231,7 +228,6 @@ def normalize_structured_questions(
             except Exception as e:
                 logging.getLogger(__name__).warning(f"Jev taxonomy normalization failed: {e}")
 
-        # 3. Resolve course_code if unassigned
         if not q.course_code:
             q.course_code = resolve_course_code(
                 q.system_region,
@@ -239,15 +235,12 @@ def normalize_structured_questions(
                 level=effective_lvl,
             )
 
-        # 4. Repair/synthesize stem_text if empty or whitespace-only but items exist
         if not q.stem_text or len(q.stem_text.strip()) < 3:
             if q.items:
                 if len(q.items) == 1 and len(q.items[0].text.strip()) >= 3:
-                    # Single item contains the whole question prompt: promote to stem
                     q.stem_text = q.items[0].text.strip()
                     q.items = []
                 else:
-                    # Multiple subparts without umbrella introduction: synthesize clean stem
                     if q.category == "STEEPLECHASE":
                         q.stem_text = "Answer the following practical/station questions:"
                     elif q.category == "CA_QUIZ":

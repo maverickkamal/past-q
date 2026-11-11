@@ -164,7 +164,6 @@ def normalize_institutions_with_gemini(
         text = text.removeprefix("```").removesuffix("```").strip()
 
     mapping: dict[str, str] = json.loads(text)
-    # Ensure every input is mapped
     for raw in raw_institutions:
         if raw not in mapping:
             mapping[raw] = raw
@@ -203,7 +202,6 @@ def run_institution_normalization(
         print("\n[DRY RUN] No database modifications written.")
         return mapping
 
-    # Apply database updates
     with get_connection(target_db) as conn:
         cursor = conn.cursor()
         for raw, canonical in mapping.items():

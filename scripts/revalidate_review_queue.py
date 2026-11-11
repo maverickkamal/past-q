@@ -11,7 +11,6 @@ import sqlite3
 import sys
 from pathlib import Path
 
-# Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import DATABASE_PATH
@@ -60,7 +59,6 @@ def revalidate_review_queue(db_path: str | Path | None = None) -> None:
                 else:
                     stem = "Address the following question items:"
 
-        # Re-construct StructuredQuestion
         sq = StructuredQuestion(
             question_number=r["question_number"],
             category=r["category"],

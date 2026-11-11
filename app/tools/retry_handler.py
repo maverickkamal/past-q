@@ -69,7 +69,6 @@ def is_transient_error(exc: Exception | None) -> bool:
     if code == 402 or "402" in err_str or "PREPAYMENT CREDITS" in err_str:
         return False
 
-    # 1. Direct type checks for standard library and HTTP library errors
     direct_types = (
         ssl.SSLError,
         ConnectionError,
@@ -83,7 +82,6 @@ def is_transient_error(exc: Exception | None) -> bool:
     if isinstance(exc, direct_types):
         return True
 
-    # 2. Check exception type names by string
     exc_type_name = type(exc).__name__
     transient_type_names = (
         "ConnectError",
@@ -101,11 +99,9 @@ def is_transient_error(exc: Exception | None) -> bool:
     if any(t in exc_type_name for t in transient_type_names):
         return True
 
-    # 3. HTTP status codes
     if code in (429, 500, 502, 503, 504):
         return True
 
-    # 4. Keyword scan across error message and class name
     full_diagnostic = f"{exc_type_name}: {err_str}"
     transient_keywords = [
         # Resource Exhaustion / Capacity
@@ -163,7 +159,6 @@ def is_transient_error(exc: Exception | None) -> bool:
     if any(kw in full_diagnostic for kw in transient_keywords):
         return True
 
-    # 5. Recursive inspection of chained causes (__cause__ and __context__)
     if getattr(exc, "__cause__", None) and is_transient_error(exc.__cause__):
         return True
     if getattr(exc, "__context__", None) and is_transient_error(exc.__context__):

@@ -91,7 +91,6 @@ async def transcribe_chunk(
     """Executes a multimodal transcription turn for a single PDF chunk."""
     user_id = "exam_pipeline_worker"
 
-    # Buffer raw PDF bytes as current_chunk.pdf in ADK artifact storage
     pdf_artifact = types.Part.from_bytes(
         data=chunk.pdf_bytes,
         mime_type="application/pdf",
@@ -196,13 +195,11 @@ async def run_stage1(
     if source is None:
         raise ValueError("pdf_source or pdf_path must be provided to run_stage1.")
 
-    # Disk caching setup
     source_name = Path(source).name if isinstance(source, (str, Path)) else "memory_document.pdf"
     clean_stem = re.sub(r"[^A-Za-z0-9_\-\.]", "_", Path(source_name).stem).strip("_")
     master_transcript_path = TRANSCRIPTS_DIR / f"{clean_stem}.md"
     chunk_cache_dir = TRANSCRIPTS_DIR / f"{clean_stem}_chunks"
 
-    # Fast master cache hit: if full transcript exists and is valid, load directly
     if max_chunks is None and master_transcript_path.exists() and master_transcript_path.stat().st_size > 500:
         cached_md = master_transcript_path.read_text(encoding="utf-8")
         print(

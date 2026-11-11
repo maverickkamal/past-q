@@ -84,26 +84,22 @@ def resolve_system_region(raw_system: str, discipline: str | None = None, level:
 
     clean_raw_lower = clean_raw.lower()
 
-    # 1. Exact or case-insensitive match on canonical system_region
     for course in courses:
         canonical_region = course.get("system_region", "")
         if clean_raw_lower == canonical_region.lower():
             return canonical_region
 
-    # 2. Match against aliases
     for course in courses:
         aliases = course.get("aliases", [])
         for alias in aliases:
             if clean_raw_lower == alias.lower():
                 return course.get("system_region", clean_raw)
 
-    # 3. Match against course code (e.g. 'ANA 201a' -> 'General Anatomy and Upper Limb')
     for course in courses:
         code = course.get("course_code", "").lower()
         if clean_raw_lower == code or clean_raw_lower == code.replace(" ", ""):
             return course.get("system_region", clean_raw)
 
-    # 4. Partial / Substring containment in canonical region or aliases
     for course in courses:
         canonical_region = course.get("system_region", "")
         canonical_lower = canonical_region.lower()
@@ -115,7 +111,6 @@ def resolve_system_region(raw_system: str, discipline: str | None = None, level:
             if clean_raw_lower in alias_lower or alias_lower in clean_raw_lower:
                 return canonical_region
 
-    # Fallback: return cleaned raw string
     return clean_raw
 
 
@@ -129,18 +124,15 @@ def resolve_course_code(raw_input: str, discipline: str | None = None, level: st
     if not courses:
         courses = get_courses()
 
-    # 1. Direct match on course_code
     for course in courses:
         code = course.get("course_code", "")
         if clean_input == code.lower() or clean_input == code.lower().replace(" ", ""):
             return code
 
-    # 2. Match on system_region
     for course in courses:
         if clean_input == course.get("system_region", "").lower():
             return course.get("course_code")
 
-    # 3. Match on canonical_name or alias
     for course in courses:
         if clean_input == course.get("canonical_name", "").lower():
             return course.get("course_code")
@@ -148,7 +140,6 @@ def resolve_course_code(raw_input: str, discipline: str | None = None, level: st
             if clean_input == alias.lower():
                 return course.get("course_code")
 
-    # 4. Containment match
     for course in courses:
         canonical_region = course.get("system_region", "").lower()
         if clean_input in canonical_region or canonical_region in clean_input:

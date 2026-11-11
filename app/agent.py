@@ -47,12 +47,10 @@ from app.tools.retry_handler import configure_clean_logging, get_retry_reason, i
 
 configure_clean_logging()
 
-# 1. Initialize Stage Sub-Agents
 transcriber_agent = create_stage1_agent()
 manifest_agent = create_stage2_agent()
 structuring_agent = create_stage3_agent()
 
-# 2. Sequential ADK Coordinator
 root_agent = SequentialAgent(
     name="medical_past_questions_pipeline",
     description="Sequential multi-agent orchestrator transforming medical past-question PDFs into structured SQLite records.",
@@ -113,7 +111,6 @@ async def run_pipeline(
     target_db = str(db_path or DATABASE_PATH)
     init_db(target_db)
 
-    # 1. Skip if booklet is already ingested in database (unless force=True)
     if not force and is_source_document_ingested(pdf_file.name, db_path=target_db):
         print(
             f"\n[SKIP] Booklet '{pdf_file.name}' is already recorded in the database. "
@@ -133,7 +130,6 @@ async def run_pipeline(
             status="SKIPPED_ALREADY_INGESTED",
         )
 
-    # 2. Password-protected / encrypted PDF check guard
     if is_pdf_password_protected(pdf_file):
         print(f"\n[WARNING] PDF '{pdf_file.name}' is password-protected or encrypted. Skipping ingestion gracefully.\n")
         return PipelineReport(
@@ -155,7 +151,6 @@ async def run_pipeline(
     print(f"Target DB:  {target_db}")
     print(f"=======================================================\n")
 
-    # --- STAGE 0: PRE-SCANNER ---
     print(f"[Stage 0] Pre-scanning {pdf_file.name}...")
     pre_scan_meta = scan_exam_file(pdf_file)
     print(
@@ -163,7 +158,6 @@ async def run_pipeline(
         f"Session: {pre_scan_meta.session} | Examiner: {pre_scan_meta.examiner} | Topic: {pre_scan_meta.topic}"
     )
 
-    # --- STAGE 1: CHUNKED INGESTION & VISION TRANSCRIBER ---
     print(f"\n[Stage 1] Transcribing PDF via Gemini Flash (adaptive in-memory chunking)...")
     master_md = await run_stage1(
         pdf_source=pdf_file,
@@ -172,7 +166,6 @@ async def run_pipeline(
     )
     print(f"  Completed transcription ({len(master_md)} characters).")
 
-    # --- STAGE 2: MASTER ASSEMBLY & POINTER-ONLY MANIFEST ---
     await asyncio.sleep(2)
     print(f"\n[Stage 2] Generating pointer manifest...")
     manifest = await generate_manifest(master_md, pre_scan_meta=pre_scan_meta, agent=manifest_agent)
@@ -186,7 +179,6 @@ async def run_pipeline(
 
     sliced_exams = slice_exam_papers(master_md, manifest)
 
-    # --- STAGE 3 & 4: FULL EXAM STRUCTURING (BUNDLED) & DETERMINISTIC VALIDATION ---
     print(f"\n[Stage 3 & 4] Structuring and validating exam papers...")
     total_questions = 0
     total_approved = 0
@@ -209,7 +201,6 @@ async def run_pipeline(
             structured_batch = QuestionBatch(questions=batch_questions)
             print(f"    - [{pointer.exam_id}] Extracted {len(structured_batch.questions)} questions.")
 
-            # Stage 4: Deterministic Validation & Deduplication
             val_result = validate_batch(
                 structured_batch,
                 exam_pointer=pointer,
@@ -218,7 +209,6 @@ async def run_pipeline(
             )
             print(f"      Validation: {val_result.approved_count} APPROVED, {val_result.needs_review_count} NEEDS_REVIEW")
 
-            # Stage 4: Persistence
             effective_exam_type = (
                 "CONTINUOUS_ASSESSMENT" if pointer.category == "CA_QUIZ"
                 else "STEEPLECHASE_OSPE" if pointer.category == "STEEPLECHASE"

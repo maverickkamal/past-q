@@ -115,18 +115,15 @@ def slice_markdown_pages(master_markdown: str, start_page: int, end_page: int) -
     if not matches:
         return master_markdown.strip()
 
-    # Map page number to character start offset
     page_map: dict[int, int] = {int(m.group(1)): m.start() for m in matches}
     sorted_pages = sorted(page_map.keys())
 
-    # Determine start character offset
     if start_page <= sorted_pages[0]:
         start_pos = 0
     else:
         applicable_starts = [p for p in sorted_pages if p <= start_page]
         start_pos = page_map[applicable_starts[-1]] if applicable_starts else 0
 
-    # Determine end character offset (start of first page > end_page, or end of text)
     subsequent_pages = [p for p in sorted_pages if p > end_page]
     if subsequent_pages:
         end_pos = page_map[subsequent_pages[0]]
@@ -315,7 +312,6 @@ def synthesize_fallback_manifest(
     session = pre_scan_meta.session if (pre_scan_meta and pre_scan_meta.session != "UNKNOWN") else "COMPILATION"
     institution = pre_scan_meta.institution if (pre_scan_meta and pre_scan_meta.institution != "UNKNOWN") else "UNKNOWN"
 
-    # 1. Attempt to detect Chapter / Section headings
     chapter_regex = re.compile(
         r"(?:^|\n)\s*(?:#+\s*)?(?:Chapter|CHAPTER|Section|SECTION)\s+([0-9IVXLCDM]+)[\s:\-–—]+([^\n\r]+)",
         re.IGNORECASE,
@@ -360,7 +356,6 @@ def synthesize_fallback_manifest(
                 )
             )
 
-    # 2. If chapter detection didn't produce enough boundaries, partition by page chunks (~20 pages)
     if len(exams) < 2:
         exams = []
         chunk_size = 20
